@@ -212,7 +212,7 @@ def scatterplot(df, var, meta, llc=None, urc=None, add_cbar=True,
 
     return fig,ax
 
-def get_value_range(ds, metric, force_quantile = False, quantiles=[0.025,0.975]):
+def get_value_range(ds, metric=None, force_quantile=False, quantiles=[0.025,0.975]):
     """
     Get the value range (v_min, v_max) from globals._metric_value_ranges
     If the range is (None, None), a symmetric range around 0 is created,
@@ -223,8 +223,8 @@ def get_value_range(ds, metric, force_quantile = False, quantiles=[0.025,0.975])
     ----------
     ds : (pandas.Series | pandas.DataFrame)
         Series holding the data
-    metric : str
-        name of the metric (e.g. 'R')
+    metric : (str | None), optional (default: None)
+        name of the metric (e.g. 'R'). None equals to force_quantile=True
     force_quantile : bool, optional (dafault: None)
         always use quantile, regardless of globals.
     quantiles : list, optional (default: [0.025,0.975])
@@ -241,6 +241,7 @@ def get_value_range(ds, metric, force_quantile = False, quantiles=[0.025,0.975])
         one of ['neither', 'min', 'max', 'both']
 
     """
+    if metric == None: force_quantile=True
     if not force_quantile: #try to get range from globals
         try:
             v_min = globals._metric_value_ranges[metric][0]
