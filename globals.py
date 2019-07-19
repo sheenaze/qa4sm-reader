@@ -104,7 +104,7 @@ data_crs = ccrs.PlateCarree()
 # === map plot defaults ===
 scattered_datasets = ['ISMN'] #dataset names which require scatterplots (data is scattered in lat/lon)
 map_figsize = [11.32,6.10]
-naturalearth_resolution = '10m' #choose from '10m', '50m' and '110m'
+naturalearth_resolution = '110m' #choose from '10m', '50m' and '110m'
 crs = ccrs.PlateCarree()
 markersize = 4 # diameter in points.
 map_pad = 0.15 # padding relative to map height.

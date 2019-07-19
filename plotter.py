@@ -6,6 +6,7 @@ as input and return figure and axes objects.
 import globals
 
 import numpy as np
+import pandas as pd
 
 import os.path
 
@@ -21,6 +22,8 @@ cconfig['data_dir'] = os.path.join(os.path.dirname(__file__), 'cartopy')
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+
+import warnings
 
 import time
 
@@ -63,7 +66,7 @@ def boxplot(df, varmeta, globmeta, printnumbers=globals.boxplot_printnumbers,
 
     # === style ===
     metric=globmeta['metric']
-    ax.set_ylim(globals._metric_value_ranges[metric])
+    ax.set_ylim(get_value_range(df, metric))
     ax.set_ylabel(globals._metric_name[metric] +
                   globals._metric_description[metric].format(globals._metric_units[globmeta['ref']]))
     # === generate title with automatic line break ===
@@ -91,11 +94,7 @@ def scatterplot(df, var, meta, llc=None, urc=None, add_cbar=True,
                 add_borders = True, add_us_states = False):
     ## start=time.time()
     # === value range ===
-    v_min = globals._metric_value_ranges[meta['metric']][0]
-    v_max = globals._metric_value_ranges[meta['metric']][1]
-    if v_min == None and v_max == None: #make sure the range is symmetrical
-        v_max = df[var].abs().max()
-        v_min = -v_max
+    v_min, v_max = get_value_range(df[var], meta['metric'], force_quantile=True)
 
     # === coordiniate range ===
     try:
@@ -185,7 +184,8 @@ def scatterplot(df, var, meta, llc=None, urc=None, add_cbar=True,
     ## print('{}s\nadding colorbar...'.format(time.time()-start))
     if add_cbar:
         cax = fig.add_subplot(gs[1])
-        cbar = fig.colorbar(im, cax=cax, orientation='horizontal')
+        cbar = fig.colorbar(im, cax=cax, orientation='horizontal',
+                            extend=get_extend(df[var],v_min,v_max))
         cbar.set_label(globals._metric_name[meta['metric']] + globals._metric_description[meta['metric']].format(globals._metric_units[meta['ref']])) #, size=5)
         cbar.outline.set_linewidth(0.4)
         cbar.outline.set_edgecolor('black')
@@ -211,6 +211,113 @@ def scatterplot(df, var, meta, llc=None, urc=None, add_cbar=True,
     ## print('{}s\nfinished.'.format(time.time()-start))
 
     return fig,ax
+
+def get_value_range(ds, metric, force_quantile = False, quantiles=[0.025,0.975]):
+    """
+    Get the value range (v_min, v_max) from globals._metric_value_ranges
+    If the range is (None, None), a symmetric range around 0 is created,
+    showing at least the symmetric <quantile> quantile of the data. 
+    if force_quantile is True, the quantile range is used.
+
+    Parameters
+    ----------
+    ds : (pandas.Series | pandas.DataFrame)
+        Series holding the data
+    metric : str
+        name of the metric (e.g. 'R')
+    force_quantile : bool, optional (dafault: None)
+        always use quantile, regardless of globals.
+    quantiles : list, optional (default: [0.025,0.975])
+        quantile of data to include in the range
+
+    Returns
+    -------
+    v_min : float
+        lower value range of plot.
+    v_max : float
+        upper value range of plot.
+    extend : str
+        whether the data extends further than the computed range.
+        one of ['neither', 'min', 'max', 'both']
+
+    """
+    if not force_quantile: #try to get range from globals
+        try:
+            v_min = globals._metric_value_ranges[metric][0]
+            v_max = globals._metric_value_ranges[metric][1]
+            if (v_min == None and v_max == None): #get quantile range and make symmetric around 0.
+                v_min, v_max = get_quantiles(ds,quantiles)
+                v_max = max(abs(v_min),abs(v_max)) #make sure the range is symmetric around 0
+                v_min = -v_max
+        except KeyError: #metric not known, fall back to quantile
+            force_quantile = True
+            warnings.warn('The metric \'{}\' is not known. \n'.format(metric) + \
+                          'Could not get value range from globals._metric_value_ranges\n' + \
+                          'Computing quantile range \'{}\' instead.\n'.format(str(quantiles)) +
+                          'Known metrics are: \'' + \
+                          '\', \''.join([metric for metric in globals._metric_value_ranges]) + '\'')
+
+    if force_quantile: #get quantile range
+        v_min, v_max = get_quantiles(ds,quantiles)
+
+    return v_min, v_max
+
+def get_quantiles(ds,quantiles):
+    """
+    Gets lower and upper quantiles from pandas.Series or pandas.DataFrame
+
+    Parameters
+    ----------
+    ds : (pandas.Series | pandas.DataFrame)
+        Input data.
+    quantiles : list, optional (default: [0.025,0.975])
+        quantile of data to include in the range
+
+    Returns
+    -------
+    v_min : float
+        lower quantile.
+    v_max : float
+        upper quantile.
+
+    """
+    q = ds.quantile(quantiles)
+    if isinstance(ds,pd.Series):
+        return q.iloc[0], q.iloc[1]
+    elif isinstance(ds,pd.DataFrame):
+        return min(q.iloc[0]), max(q.iloc[1])
+    else:
+        raise TypeError("Inappropriate argument type. 'ds' must be pandas.Series or pandas.DataFrame.")
+
+def get_extend(ds, v_min, v_max):
+    """
+    whether the data extends further than v_min, v_max.  
+
+    Parameters
+    ----------
+    ds : pandas.Series
+        Series holding the data.
+    v_min : float
+        lower value range of plot.
+    v_max : float
+        upper value range of plot.
+
+    Returns
+    -------
+    str
+        one of ['neither', 'min', 'max', 'both'].
+
+    """
+    if v_min <= min(ds):
+        if v_max >= max(ds):
+            return 'neither'
+        else:
+            return 'max'
+    else:
+        if v_max >= max(ds):
+            return 'min'
+        else:
+            return 'both'
 
 def print_watermark(fig,placement):
     """

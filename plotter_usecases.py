@@ -88,3 +88,4 @@ def usecase():
 
 if __name__ == '__main__':
     fig,ax = usecase()
+    fig,ax
