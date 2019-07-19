@@ -25,8 +25,6 @@ from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 import warnings
 
-import time
-
 def boxplot(df, varmeta, globmeta, printnumbers=globals.boxplot_printnumbers,
             watermark_pos=globals.watermark_pos, figsize=globals.boxplot_figsize,
             dpi=globals.dpi, title_pad = globals.title_pad):
@@ -83,132 +81,46 @@ def boxplot(df, varmeta, globmeta, printnumbers=globals.boxplot_printnumbers,
     ax.set_title(plot_title, pad=title_pad)
     # === watermark ===
     plt.tight_layout()
-    if watermark_pos: print_watermark(fig,watermark_pos)
+    if watermark_pos: make_watermark(fig,watermark_pos)
     return fig,ax
 
-def scatterplot(df, var, meta, llc=None, urc=None, add_cbar=True,
+def scatterplot(df, var, meta, title=None, label=None, llc=None, urc=None,
                 figsize=globals.map_figsize, dpi=globals.dpi,
-                projection = globals.crs, watermark_pos=globals.watermark_pos,
-                title_pad = globals.title_pad, add_grid = True,
-                add_rendering=True, add_coastline = True, add_land = True,
-                add_borders = True, add_us_states = False):
-    ## start=time.time()
+                projection = None, watermark_pos=globals.watermark_pos,
+                add_title = True, add_cbar=True,
+                **style_kwargs):
     # === value range ===
-    v_min, v_max = get_value_range(df[var], meta['metric'], force_quantile=True)
+    v_min, v_max = get_value_range(df[var], meta['metric'])
 
     # === coordiniate range ===
-    try:
-        extent = [llc[0],urc[0],llc[1],urc[1]]
-    except:
-        extent = [df['lon'].min(), df['lon'].max(),
-              df['lat'].min(), df['lat'].max()]
-        lon_interval = extent[1] - extent[0]
-        lat_interval = extent[3] - extent[2]
-        #set map-padding around data to be globals.map_pad percent of the smaller dimension
-        padding = min([lon_interval,lat_interval]) * globals.map_pad/(1+globals.map_pad)
-        extent = [extent[0] - padding, #x_min / lon_min
-                  extent[1] + padding, #x_max / lon_max
-                  extent[2] - padding, #y_min / lat_min
-                  extent[3] + padding] #y_max / lat_max
-
-    lon_interval = extent[1] - extent[0]
-    lat_interval = extent[3] - extent[2]
-    print(extent)
+    cr = get_coordinate_range(df, llc, urc)
 
     # === marker size ===
     markersize = globals.markersize**2 #in points**2
-    ## print('{}s\ninitializing plot...'.format(time.time()-start))
+
     # === init plot ===
-    if add_cbar:
-        gs = gridspec.GridSpec(nrows=2, ncols=1, height_ratios=[19,1])
-    else:
-        gs = gridspec.GridSpec(nrows=1, ncols=1)
-    fig = plt.figure(figsize=figsize, dpi=dpi)
-    ax = fig.add_subplot(gs[0],projection=projection)
+    fig, ax, cax = init_plot(figsize, dpi, add_cbar)
 
-    ## print('{}s\nstarting to plot...'.format(time.time()-start))
     # === plot ===
-    cm = plt.cm.get_cmap(globals._colormaps[meta['metric']])
-    im = ax.scatter(df['lon'], df['lat'], c=df[var],
-            cmap=cm, s=markersize, vmin=v_min, vmax=v_max, edgecolors='black',
+    cmap = plt.cm.get_cmap(globals._colormaps[meta['metric']])
+    lat, lon = globals.index_names
+    im = ax.scatter(df[lon], df[lat], c=df[var],
+            cmap=cmap, s=markersize, vmin=v_min, vmax=v_max, edgecolors='black',
             linewidths=0.1, zorder=4, transform=globals.data_crs)
-    ax.set_extent(extent, crs=globals.data_crs)
-    ## print('{}s\nsetting style...'.format(time.time()-start))
-
-    # === style ===
-    ax.outline_patch.set_linewidth(0.4)
-    if add_rendering: ax.stock_img()
-    if add_coastline:
-        coastline = cfeature.NaturalEarthFeature('physical', 'coastline',
-                                 globals.naturalearth_resolution,
-                                 edgecolor='black', facecolor='none')
-        ax.add_feature(coastline, linewidth=0.4, zorder=2)
-    if add_land:
-        land = cfeature.NaturalEarthFeature('physical', 'land',
-                                 globals.naturalearth_resolution,
-                                 edgecolor='none', facecolor='white')
-        ax.add_feature(land, zorder=1)
-    if add_borders:
-        borders = cfeature.NaturalEarthFeature('cultural', 'admin_0_countries',
-                                 globals.naturalearth_resolution,
-                                 edgecolor='black', facecolor='none')
-        ax.add_feature(borders, linewidth=0.2, zorder=2)
-    if add_us_states: ax.add_feature(cfeature.STATES, linewidth=0.1, zorder=2)
-    ## print('{}s\nadding gridlines...'.format(time.time()-start))
-    if add_grid: # add gridlines
-        grid_interval = max(lon_interval,lat_interval)/5 #create approximately 4 gridlines in the bigger dimension
-        grid_interval = min(globals.grid_intervals, key = lambda x:abs(x-grid_interval)) #select the grid spacing from the list which fits best
-        gl = ax.gridlines(crs=globals.data_crs, draw_labels=False,
-                          linewidth=0.5, color='grey', linestyle='--',
-                          zorder=3)
-        xticks = np.arange(-180,180.001,grid_interval)
-        yticks = np.arange(-90,90.001,grid_interval)
-        gl.xlocator = mticker.FixedLocator(xticks)
-        gl.ylocator = mticker.FixedLocator(yticks)
-        try: #drawing labels fails for most projections
-            gltext = ax.gridlines(crs=globals.data_crs, draw_labels=True,
-                          linewidth=0.5, color='grey', alpha=0., linestyle='--',
-                          zorder=3)
-            xticks = xticks[(xticks>=extent[0]) & (xticks<=extent[1])]
-            yticks = yticks[(yticks>=extent[2]) & (yticks<=extent[3])]
-            gltext.xformatter=LONGITUDE_FORMATTER
-            gltext.yformatter=LATITUDE_FORMATTER
-            gltext.xlabels_top=False
-            gltext.ylabels_left=False
-            gltext.xlocator = mticker.FixedLocator(xticks)
-            gltext.ylocator = mticker.FixedLocator(yticks)
-        except RuntimeError as e:
-            print("No tick labels plotted.\n" + str(e))
 
     # === add colorbar ===
-    ## print('{}s\nadding colorbar...'.format(time.time()-start))
-    if add_cbar:
-        cax = fig.add_subplot(gs[1])
-        cbar = fig.colorbar(im, cax=cax, orientation='horizontal',
-                            extend=get_extend(df[var],v_min,v_max))
-        cbar.set_label(globals._metric_name[meta['metric']] + globals._metric_description[meta['metric']].format(globals._metric_units[meta['ref']])) #, size=5)
-        cbar.outline.set_linewidth(0.4)
-        cbar.outline.set_edgecolor('black')
-        cbar.ax.tick_params(width=0.4)#, labelsize=4)
-    ## print('{}s\nadding title...'.format(time.time()-start))
+    if add_cbar: _make_cbar(fig, im, cax, df[var], v_min, v_max, meta, label)
 
-    plot_title = 'Comparing {0} ({1}) to {2} ({3})'.format(
-                meta['ref_pretty_name'],
-                meta['ref_version_pretty_name'],
-                meta['ds_pretty_name'],
-                meta['ds_version_pretty_name'])
-    ax.set_title(plot_title)
-    ## print('{}s\ndrawing...'.format(time.time()-start))
+    # === style ===
+    if add_title: _make_title(ax, meta, title)
+    style_map(ax, cr, **style_kwargs)
+
+    # === layout ===
+    fig.canvas.draw() #nötig wegen bug in cartopy. dauert sehr lange!
+    plt.tight_layout(pad=1) #pad=0.5,h_pad=1,w_pad=1,rect=(0, 0, 1, 1))
 
     # === watermark ===
-    #debug_tight_layout(fig)
-    #debug_tight_layout_gs(fig,gs)
-    fig.canvas.draw() #nötig wegen bug in cartopy. dauert sehr lange!
-    ## print('{}s\ntight layout...'.format(time.time()-start))
-    plt.tight_layout(pad=1) #pad=0.5,h_pad=1,w_pad=1,rect=(0, 0, 1, 1))
-    ## print('{}s\nwatermark...'.format(time.time()-start))
-    if watermark_pos: print_watermark(fig,watermark_pos)
-    ## print('{}s\nfinished.'.format(time.time()-start))
+    if watermark_pos: make_watermark(fig,watermark_pos) #tight_layout does not take into account annotations, so make_watermark needs to be called after.
 
     return fig,ax
 
@@ -223,12 +135,15 @@ def get_value_range(ds, metric=None, force_quantile=False, quantiles=[0.025,0.97
     ----------
     ds : (pandas.Series | pandas.DataFrame)
         Series holding the data
-    metric : (str | None), optional (default: None)
-        name of the metric (e.g. 'R'). None equals to force_quantile=True
-    force_quantile : bool, optional (dafault: None)
+    metric : (str | None), optional
+        name of the metric (e.g. 'R'). None equals to force_quantile=True.
+        The default is None.
+    force_quantile : bool, optional
         always use quantile, regardless of globals.
-    quantiles : list, optional (default: [0.025,0.975])
-        quantile of data to include in the range
+        The default is False.
+    quantiles : list, optional
+        quantile of data to include in the range.
+        The default is [0.025,0.975]
 
     Returns
     -------
@@ -290,6 +205,59 @@ def get_quantiles(ds,quantiles):
     else:
         raise TypeError("Inappropriate argument type. 'ds' must be pandas.Series or pandas.DataFrame.")
 
+def get_coordinate_range(df, llc=None, urc=None):
+    """
+    Gets the coordinate range dictionary. Tries to use urc and llc.
+    Otherwise uses range of data and adds a padding fraction as specified in globals.map_pad
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Plot data.
+    llc : (Array-like | None), optional
+        Lower left corner in map coordinates. The default is None.
+    urc : (Array-like | None), optional
+        Upper right corner in map coordinates. The default is None.
+
+    Returns
+    -------
+    cr : dict
+        dictionary containing ['x_min', 'x_max', 'y_min', 'y_max'] in map coordinates.
+
+    """
+    try:
+        cr = {'x_min' : llc[0],
+              'x_max' : urc[0],
+              'y_min' : llc[1],
+              'y_max' : urc[1]}
+    except:
+        lat,lon = globals.index_names
+        cr = {'x_min' : df[lon].min(),
+              'x_max' : df[lon].max(),
+              'y_min' : df[lat].min(),
+              'y_max' : df[lat].max()}
+        dx = cr['x_max'] - cr['x_min']
+        dy = cr['y_max'] - cr['y_min']
+        #set map-padding around data to be globals.map_pad percent of the smaller dimension
+        padding = min(dx,dy) * globals.map_pad/(1+globals.map_pad)
+        cr['x_min'] -= padding
+        cr['x_max'] += padding
+        cr['y_min'] -= padding
+        cr['y_max'] += padding
+    return cr
+
+def init_plot(figsize, dpi, add_cbar, projection=globals.crs):
+    fig = plt.figure(figsize=figsize, dpi=dpi)
+    if add_cbar:
+        gs = gridspec.GridSpec(nrows=2, ncols=1, height_ratios=[19,1])
+        ax = fig.add_subplot(gs[0],projection=projection)
+        cax = fig.add_subplot(gs[1])
+    else:
+        gs = gridspec.GridSpec(nrows=1, ncols=1)
+        ax = fig.add_subplot(gs[0],projection=projection)
+        cax = None
+    return fig, ax, cax
+
 def get_extend(ds, v_min, v_max):
     """
     whether the data extends further than v_min, v_max.  
@@ -320,13 +288,91 @@ def get_extend(ds, v_min, v_max):
         else:
             return 'both'
 
-def print_watermark(fig,placement):
+def _make_cbar(fig, im, cax, ds, v_min, v_max, meta, label=None):
+    if not label:
+        try:
+            label = globals._metric_name[meta['metric']] + \
+                        globals._metric_description[meta['metric']].format(
+                                globals._metric_units[meta['ref']])
+        except KeyError as e:
+            raise Exception('The metric \'{}\' or reference \'{}\' is not known.\n'.format(meta['metric'], meta['ref']) + str(e))
+    cbar = fig.colorbar(im, cax=cax, orientation='horizontal',
+                        extend=get_extend(ds,v_min,v_max))
+    cbar.set_label(label) #, size=5)
+    cbar.outline.set_linewidth(0.4)
+    cbar.outline.set_edgecolor('black')
+    cbar.ax.tick_params(width=0.4)#, labelsize=4)
+
+def _make_title(ax, meta=None, title=None, title_pad=globals.title_pad):
+    if not title:
+        try:
+            title = 'Comparing {0} ({1}) to {2} ({3})'.format(
+                meta['ref_pretty_name'],
+                meta['ref_version_pretty_name'],
+                meta['ds_pretty_name'],
+                meta['ds_version_pretty_name'])
+        except TypeError:
+            raise Exception('Either \'meta\' or \'title\' need to be specified!')
+    ax.set_title(title, pad=title_pad)
+
+
+def style_map(ax, cr, add_grid=True, map_resolution=globals.naturalearth_resolution,
+              add_topo=True, add_coastline=True,
+              add_land=True, add_borders=True, add_us_states=False):
+    ax.set_extent([cr['x_min'], cr['x_max'], cr['y_min'], cr['y_max']], crs=globals.data_crs)
+    ax.outline_patch.set_linewidth(0.4)
+    if add_grid: # add gridlines
+        grid_interval = max((cr['x_max'] - cr['x_min']),
+                            (cr['y_max'] - cr['y_min']))/5 #create approximately 4 gridlines in the bigger dimension
+        grid_interval = min(globals.grid_intervals, key = lambda x:abs(x-grid_interval)) #select the grid spacing from the list which fits best
+        gl = ax.gridlines(crs=globals.data_crs, draw_labels=False,
+                          linewidth=0.5, color='grey', linestyle='--',
+                          zorder=3)
+        xticks = np.arange(-180,180.001,grid_interval)
+        yticks = np.arange(-90,90.001,grid_interval)
+        gl.xlocator = mticker.FixedLocator(xticks)
+        gl.ylocator = mticker.FixedLocator(yticks)
+        try: #drawing labels fails for most projections
+            gltext = ax.gridlines(crs=globals.data_crs, draw_labels=True,
+                          linewidth=0.5, color='grey', alpha=0., linestyle='--',
+                          zorder=3)
+            xticks = xticks[(xticks>=cr['x_min']) & (xticks<=cr['x_max'])]
+            yticks = yticks[(yticks>=cr['y_min']) & (yticks<=cr['y_max'])]
+            gltext.xformatter=LONGITUDE_FORMATTER
+            gltext.yformatter=LATITUDE_FORMATTER
+            gltext.xlabels_top=False
+            gltext.ylabels_left=False
+            gltext.xlocator = mticker.FixedLocator(xticks)
+            gltext.ylocator = mticker.FixedLocator(yticks)
+        except RuntimeError as e:
+            print("No tick labels plotted.\n" + str(e))
+    if add_topo: ax.stock_img()
+    if add_coastline:
+        coastline = cfeature.NaturalEarthFeature('physical', 'coastline',
+                                 map_resolution,
+                                 edgecolor='black', facecolor='none')
+        ax.add_feature(coastline, linewidth=0.4, zorder=2)
+    if add_land:
+        land = cfeature.NaturalEarthFeature('physical', 'land',
+                                 map_resolution,
+                                 edgecolor='none', facecolor='white')
+        ax.add_feature(land, zorder=1)
+    if add_borders:
+        borders = cfeature.NaturalEarthFeature('cultural', 'admin_0_countries',
+                                 map_resolution,
+                                 edgecolor='black', facecolor='none')
+        ax.add_feature(borders, linewidth=0.2, zorder=2)
+    if add_us_states: ax.add_feature(cfeature.STATES, linewidth=0.1, zorder=2)
+
+
+
+def make_watermark(fig,placement):
     """
     Adds a watermark to fig and adjusts the current axis to make sure there
     is enough padding around the watermarks.
     Padding can be adjusted in globals.watermark_pad.
     Fontsize can be adjusted in globals.watermark_fontsize.
-    plt.tight_layout needs to be called prior to print_watermark
+    plt.tight_layout needs to be called prior to make_watermark
 
     Parameters
     ----------
