@@ -50,11 +50,27 @@ _metric_description = { #from /qa4sm/validator/validation/graphics.py
 # sequential: increasing value good (n_obs):
 _colormaps = { #from /qa4sm/validator/validation/graphics.py
     'R': 'RdYlBu',
-    'p_R': 'RdYlBu_r',
+    'p_R': 'YlOrRd',
     'rho': 'RdYlBu',
     'p_rho': 'RdYlBu_r',
     'rmsd': 'RdYlBu_r',
     'bias': 'coolwarm', #red rather stands for bad, but negative and positive bias do not mean good or bad.
+    'n_obs': 'RdYlBu',
+    'ubRMSD': 'RdYlBu_r',
+    'RSS': 'RdYlBu_r',
+    'mse' : 'RdYlBu_r',
+    'mse_corr' : 'RdYlBu_r',
+    'mse_bias' : 'RdYlBu_r',
+    'mse_var' : 'RdYlBu_r',
+}
+
+_colormaps2 = { #from /qa4sm/validator/validation/graphics.py
+    'R': 'cet_coolwarm_r',
+    'p_R': 'cet_fire_r',
+    'rho': 'cet_coolwarm_r',
+    'p_rho': 'cet_fire_r',
+    'rmsd': 'cet_fire',
+    'bias': 'cet_gwv', #red rather stands for bad, but negative and positive bias do not mean good or bad.
     'n_obs': 'RdYlBu',
     'ubRMSD': 'RdYlBu_r',
     'RSS': 'RdYlBu_r',

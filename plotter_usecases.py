@@ -68,11 +68,11 @@ def start_usecase(usecase):
                                  # urc=(175,78.55))
     if usecase == 'map_gldas':
         filepath = os.path.join(this_dir, 'test_data', testfiles['4-GLDAS'])
-        variable = interface.get_metric_var(filepath, 'R')[0] #['R_between_5-ISMN_1-C3S']#, 'R_between_5-ISMN_2-SMAP', 'R_between_5-ISMN_3-ASCAT', 'R_between_5-ISMN_4-SMOS']
+        variable = interface.get_metric_var(filepath, 'rho')[0] #['R_between_5-ISMN_1-C3S']#, 'R_between_5-ISMN_2-SMAP', 'R_between_5-ISMN_3-ASCAT', 'R_between_5-ISMN_4-SMOS']
         return interface.mapplot(filepath,variable,outdir=out_path,
                                  watermark_pos='bottom', format='png',
-                                 projection=ccrs.PlateCarree(), dpi=300,
-                                 llc=(-120,20), urc=(-95,40))
+                                 projection=ccrs.PlateCarree(), dpi=300) #,
+                                  #llc=(-120,20), urc=(-95,40))
 
     if usecase == 'boxplot-metric':
         metric = 'ubrmsd'
