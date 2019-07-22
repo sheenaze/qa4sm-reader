@@ -16,7 +16,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import matplotlib.gridspec as gridspec
-import colorcet
+import colorcet as cc
 
 from cartopy import config as cconfig
 cconfig['data_dir'] = os.path.join(os.path.dirname(__file__), 'cartopy')
@@ -294,7 +294,8 @@ def mapplot(df, var, meta, title=None, label=None, llc=None, urc=None,
     zz, extent = geotraj_to_geo2d(df, var)
 
     # === plot ===
-    cmap = plt.cm.get_cmap(globals._colormaps[meta['metric']])
+    if not colormap: colormap=globals._colormaps[meta['metric']]
+    cmap = plt.cm.get_cmap(colormap)
     im = ax.imshow(zz, cmap=cmap, vmin=v_min, vmax=v_max,
                    interpolation='nearest', origin='lower',
                    extent=extent,
@@ -420,6 +421,12 @@ def get_value_range(ds, metric=None, force_quantile=False, quantiles=[0.025,0.97
                 v_min, v_max = get_quantiles(ds,quantiles)
                 v_max = max(abs(v_min),abs(v_max)) #make sure the range is symmetric around 0
                 v_min = -v_max
+            elif v_min == None:
+                v_min = get_quantiles(ds,quantiles)[0]
+            elif v_max == None:
+                v_max = get_quantiles(ds,quantiles)[1]
+            else: #v_min and v_max are both determinded in globals
+                pass
         except KeyError: #metric not known, fall back to quantile
             force_quantile = True
             warnings.warn('The metric \'{}\' is not known. \n'.format(metric) + \
@@ -441,7 +448,7 @@ def get_quantiles(ds,quantiles):
     ----------
     ds : (pandas.Series | pandas.DataFrame)
         Input data.
-    quantiles : list, optional (default: [0.025,0.975])
+    quantiles : list
         quantile of data to include in the range
 
     Returns

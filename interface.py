@@ -11,10 +11,7 @@ import os
 
 def get_metric_var(filepath, metric):
     with xr.open_dataset(filepath) as ds:
-        variables = [var for var in ds.data_vars if re.search(r'^{}(_between|$)'.format(metric), var, re.I)]
-        # for var in ds.data_vars:
-        #     if re.search(r'^{}(_between|$)'.format(metric), var, re.I):
-        #         variables.append(var)
+        variables = [var for var in ds.data_vars if re.search(r'^{}(_between|$)'.format(metric), var, re.I)] #TODO: unexpected behaviour. n_obs is matched, altough there is no '_between'. #TODO: n_obs should also be matched (var in df is 'n_obs')
     return variables
 
 def boxplot(filepath, variables, outdir=None, outname=None, format=None , **plot_kwargs):
@@ -96,7 +93,6 @@ def mapplot(filepath, var, outdir=None, outname=None, format=None, **plot_kwargs
     if ( meta['ds'] in globals.scattered_datasets or meta['ref'] in globals.scattered_datasets ): #do scatterplot
         fig,ax = plotter.scatterplot(df=df, var = var, meta = meta, **plot_kwargs)
     else:
-        print('mapplot')
         fig,ax = plotter.mapplot(df=df, var = var, meta = meta, **plot_kwargs)
 
     # == save figure ===
@@ -111,8 +107,8 @@ def mapplot(filepath, var, outdir=None, outname=None, format=None, **plot_kwargs
             plt.savefig('{}.{}'.format(filename, ending), dpi='figure')
     else:
         plt.show()
-    #plt.close()
-    return fig,ax
+    plt.close()
+    #return fig,ax
 
 def load_data(ds,variables,index_names):
     """
@@ -134,18 +130,24 @@ def get_meta(var,ds):
     if not var in ds.data_vars:
         raise Exception('The given var \'{}\' is not contained in the dataset.'.format(var))
     # === parse var ===
-    pattern = re.compile(r"""(\D+)_between_(\d+)-(\S+)_(\d+)-(?P<dataset>\S+)""") #'ubRMSD_between_4-ISMN_3-ESA_CCI_SM_combined'
-    match = pattern.match(var)
     meta = dict()
     try:
+        pattern = re.compile(r"""(\D+)_between_(\d+)-(\S+)_(\d+)-(?P<dataset>\S+)""") #'ubRMSD_between_4-ISMN_3-ESA_CCI_SM_combined'
+        match = pattern.match(var)
         meta['metric'] = match.group(1)
         meta['ref_no'] = int(match.group(2))
         meta['ref'] = match.group(3)
         meta['ds_no'] = int(match.group(4))
         meta['ds'] = match.group(5)
-
     except AttributeError:
-        raise Exception('The given var \'{}\' does not match the regex pattern.'.format(var))
+        if var == 'n_obs': #catch error occuring when var is 'n_obs'
+            meta['metric'] = 'n_obs'
+            meta['ref_no'] = 4 #TODO: find a way to not hard-code this!
+            meta['ref'] = 'GLDAS'
+            meta['ds_no'] = 1
+            meta['ds'] = 'GLDAS'
+        else:
+            raise Exception('The given var \'{}\' does not match the regex pattern.'.format(var))
     # === read ds metadata
     try:
         meta['ref_pretty_name'] = meta['ref'] #TODO: get pretty name from somewhere!
