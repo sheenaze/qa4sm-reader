@@ -9,13 +9,13 @@ import matplotlib.pyplot as plt
 import re
 import os
 
-def boxplot_metric(filepath, metric, outdir=None, outname=None, format=None , **plot_kwargs):
-    variables = list()
+def get_metric_var(filepath, metric):
     with xr.open_dataset(filepath) as ds:
-        for var in ds.data_vars:
-            if re.search(r'^{}(_between|$)'.format(metric), var, re.I):
-                variables.append(var)
-    return boxplot(filepath, variables, outdir=outdir, outname=outname, format=format , **plot_kwargs)
+        variables = [var for var in ds.data_vars if re.search(r'^{}(_between|$)'.format(metric), var, re.I)]
+        # for var in ds.data_vars:
+        #     if re.search(r'^{}(_between|$)'.format(metric), var, re.I):
+        #         variables.append(var)
+    return variables
 
 def boxplot(filepath, variables, outdir=None, outname=None, format=None , **plot_kwargs):
     """
@@ -96,6 +96,7 @@ def mapplot(filepath, var, outdir=None, outname=None, format=None, **plot_kwargs
     if ( meta['ds'] in globals.scattered_datasets or meta['ref'] in globals.scattered_datasets ): #do scatterplot
         fig,ax = plotter.scatterplot(df=df, var = var, meta = meta, **plot_kwargs)
     else:
+        print('mapplot')
         fig,ax = plotter.mapplot(df=df, var = var, meta = meta, **plot_kwargs)
 
     # == save figure ===
@@ -122,7 +123,7 @@ def load_data(ds,variables,index_names):
         df = ds[index_names + variables].to_dataframe()
     except KeyError as e:
         raise Exception('The given variabes '+ ', '.join(variables) + ' do not match the names in the input data.' + str(e))
-    return df.dropna(axis='index',subset=variables)  #.set_index(index_names) multiindex is giving troubles!
+    return df.dropna(axis='index',subset=variables)
 
 def get_meta(var,ds):
     """

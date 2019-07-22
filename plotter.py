@@ -106,7 +106,85 @@ def scatterplot(df, var, meta, title=None, label=None, llc=None, urc=None,
     lat, lon = globals.index_names
     im = ax.scatter(df[lon], df[lat], c=df[var],
             cmap=cmap, s=markersize, vmin=v_min, vmax=v_max, edgecolors='black',
-            linewidths=0.1, zorder=4, transform=globals.data_crs)
+            linewidths=0.1, zorder=2, transform=globals.data_crs)
+
+    # === add colorbar ===
+    if add_cbar: _make_cbar(fig, im, cax, df[var], v_min, v_max, meta, label)
+
+    # === style ===
+    if add_title: _make_title(ax, meta, title)
+    style_map(ax, cr, **style_kwargs)
+
+    # === layout ===
+    fig.canvas.draw() #nötig wegen bug in cartopy. dauert sehr lange!
+    plt.tight_layout(pad=1) #pad=0.5,h_pad=1,w_pad=1,rect=(0, 0, 1, 1))
+
+    # === watermark ===
+    if watermark_pos: make_watermark(fig,watermark_pos) #tight_layout does not take into account annotations, so make_watermark needs to be called after.
+
+    return fig,ax
+
+def mapplot(df, var, meta, title=None, label=None, llc=None, urc=None,
+                figsize=globals.map_figsize, dpi=globals.dpi,
+                projection = None, watermark_pos=globals.watermark_pos,
+                add_title = True, add_cbar=True,
+                **style_kwargs):
+    # === value range ===
+    v_min, v_max = get_value_range(df[var], meta['metric'])
+
+    # === coordiniate range ===
+    cr = get_coordinate_range(df, llc, urc)
+    print(cr)
+    # === marker size ===
+    markersize = globals.markersize**2 #in points**2
+
+    # === init plot ===
+    fig, ax, cax = init_plot(figsize, dpi, add_cbar)
+
+    # === prepare data ===
+    def _float_gcd(a, b, atol = 1e-08):
+        while abs(b) > atol:
+            a, b = b, a % b
+        return a
+
+    def _get_even(a):
+        "Find the stepsize of a and return an evenly spaced array"
+        a = np.unique(a)
+        das = np.unique(np.diff(a)) #find stepsizes
+        da = das[0] #smallest stepsize
+        for d in das[1:]: #make sure, other stepsizes are multiple of dy
+            da = _float_gcd(d, da)
+        a_min = a[0]
+        a_max = a[-1]
+        len_a = int( (a_max-a_min) / da + 1 )
+        return a_min, a_max, da, len_a #np.arange(a_min, a_max+da, da)
+
+    def _index(a, a_min, da):
+        "Return the index corresponding to a"
+        return int((a-a_min)/da)
+
+    lons = df[globals.index_names[1]]
+    lats = df[globals.index_names[0]]
+    data = df[var]
+
+    x_min, x_max, dx, len_x = _get_even(lons)
+    y_min, y_max, dy, len_y = _get_even(lats)
+
+    print(x_min, x_max)
+    print(y_min, y_max)
+
+    zz = np.empty((len_y, len_x), dtype=np.float64)
+    zz[:] = np.nan
+
+    for x, y, z in zip(lons, lats, data):
+        zz[_index(y, y_min, dy), _index(x, x_min, dx)] = z
+
+    # === plot ===
+    cmap = plt.cm.get_cmap(globals._colormaps[meta['metric']])
+    im = ax.imshow(zz, cmap=cmap, vmin=v_min, vmax=v_max,
+                   interpolation='nearest', origin='lower',
+                   extent=(x_min-dx/2, x_max+dx/2, y_min-dy/2, y_max+dy/2),
+                   transform=globals.data_crs, zorder=2)
 
     # === add colorbar ===
     if add_cbar: _make_cbar(fig, im, cax, df[var], v_min, v_max, meta, label)
@@ -244,6 +322,10 @@ def get_coordinate_range(df, llc=None, urc=None):
         cr['x_max'] += padding
         cr['y_min'] -= padding
         cr['y_max'] += padding
+    if cr['x_min']<=-180: cr['x_min']=-180
+    if cr['x_max']>=180: cr['x_max']=180
+    if cr['y_min']<=-90: cr['y_min']=-90
+    if cr['y_max']>=90: cr['y_max']=90
     return cr
 
 def init_plot(figsize, dpi, add_cbar, projection=globals.crs):
@@ -315,7 +397,6 @@ def _make_title(ax, meta=None, title=None, title_pad=globals.title_pad):
             raise Exception('Either \'meta\' or \'title\' need to be specified!')
     ax.set_title(title, pad=title_pad)
 
-
 def style_map(ax, cr, add_grid=True, map_resolution=globals.naturalearth_resolution,
               add_topo=True, add_coastline=True,
               add_land=True, add_borders=True, add_us_states=False):
@@ -335,7 +416,7 @@ def style_map(ax, cr, add_grid=True, map_resolution=globals.naturalearth_resolut
         try: #drawing labels fails for most projections
             gltext = ax.gridlines(crs=globals.data_crs, draw_labels=True,
                           linewidth=0.5, color='grey', alpha=0., linestyle='--',
-                          zorder=3)
+                          zorder=4)
             xticks = xticks[(xticks>=cr['x_min']) & (xticks<=cr['x_max'])]
             yticks = yticks[(yticks>=cr['y_min']) & (yticks<=cr['y_max'])]
             gltext.xformatter=LONGITUDE_FORMATTER
@@ -351,7 +432,7 @@ def style_map(ax, cr, add_grid=True, map_resolution=globals.naturalearth_resolut
         coastline = cfeature.NaturalEarthFeature('physical', 'coastline',
                                  map_resolution,
                                  edgecolor='black', facecolor='none')
-        ax.add_feature(coastline, linewidth=0.4, zorder=2)
+        ax.add_feature(coastline, linewidth=0.4, zorder=3)
     if add_land:
         land = cfeature.NaturalEarthFeature('physical', 'land',
                                  map_resolution,
@@ -361,10 +442,8 @@ def style_map(ax, cr, add_grid=True, map_resolution=globals.naturalearth_resolut
         borders = cfeature.NaturalEarthFeature('cultural', 'admin_0_countries',
                                  map_resolution,
                                  edgecolor='black', facecolor='none')
-        ax.add_feature(borders, linewidth=0.2, zorder=2)
-    if add_us_states: ax.add_feature(cfeature.STATES, linewidth=0.1, zorder=2)
-
-
+        ax.add_feature(borders, linewidth=0.2, zorder=3)
+    if add_us_states: ax.add_feature(cfeature.STATES, linewidth=0.1, zorder=3)
 
 def make_watermark(fig,placement):
     """
