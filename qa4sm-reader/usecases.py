@@ -30,7 +30,7 @@ def start_usecase(usecase):
                      'ubRMSD_between_4-ISMN_2-SMAP',
                      'ubRMSD_between_4-ISMN_3-ESA_CCI_SM_combined']
         filepath = os.path.join(this_dir, 'test_data', testfiles['4-ISMN'])
-        interface.boxplot(filepath,variables,outdir=out_path,
+        interface.boxplot(filepath,variables,out_dir=out_path,
                           format=['png','svg'],dpi=100)
 
     if usecase == 'qa4sm_gldas':
@@ -45,7 +45,7 @@ def start_usecase(usecase):
                      'p_R_between_4-GLDAS_2-SMAP',
                      'p_R_between_4-GLDAS_3-SMOS']
         filepath = os.path.join(this_dir, 'test_data', testfiles['4-GLDAS'])
-        interface.boxplot(filepath,variables,outdir=out_path,
+        interface.boxplot(filepath,variables,out_dir=out_path,
                           format=['png','svg'])
 
     if usecase == 'qa4sm_ismn-error':
@@ -56,12 +56,12 @@ def start_usecase(usecase):
     if usecase == 'asdf':
         variables = ['R_between_5-ISMN_1-C3S', 'R_between_5-ISMN_2-SMAP', 'R_between_5-ISMN_3-ASCAT', 'R_between_5-ISMN_4-SMOS']
         filepath = os.path.join(this_dir, 'test_data', testfiles['5-ISMN'])
-        interface.boxplot(filepath,variables,outdir=out_path,watermark_pos='bottom', format='png')
+        interface.boxplot(filepath,variables,out_dir=out_path,watermark_pos='bottom', format='png')
 
     if usecase == 'map':
         variable = ['R_between_5-ISMN_1-C3S']#, 'R_between_5-ISMN_2-SMAP', 'R_between_5-ISMN_3-ASCAT', 'R_between_5-ISMN_4-SMOS']
         filepath = os.path.join(this_dir, 'test_data', testfiles['5-ISMN'])
-        return interface.mapplot(filepath,variable,outdir=out_path,
+        return interface.mapplot(filepath,variable,out_dir=out_path,
                                  watermark_pos='bottom', format='png',
                                  projection=ccrs.PlateCarree(), dpi=300)#,
                                  # llc=(-175,-48.54),
@@ -69,7 +69,7 @@ def start_usecase(usecase):
     if usecase == 'map_gldas':
         filepath = os.path.join(this_dir, 'test_data', testfiles['4-GLDAS'])
         variable = interface.get_metric_var(filepath, 'rho')[0] #['R_between_5-ISMN_1-C3S']#, 'R_between_5-ISMN_2-SMAP', 'R_between_5-ISMN_3-ASCAT', 'R_between_5-ISMN_4-SMOS']
-        return interface.mapplot(filepath,variable,outdir=out_path,
+        return interface.mapplot(filepath,variable,out_dir=out_path,
                                  watermark_pos='bottom', format='png',
                                  projection=ccrs.PlateCarree(), dpi=300) #,
                                   #llc=(-120,20), urc=(-95,40))
@@ -77,7 +77,7 @@ def start_usecase(usecase):
     if usecase == 'boxplot-metric':
         metric = 'ubrmsd'
         filepath = os.path.join(this_dir, 'test_data', '5-ISMN.soil moisture_with_1-C3S.sm_with_2-SMAP.soil_moisture_with_3-ASCAT.sm_with_4-SMOS.Soil_Moisture.nc')
-        return interface.boxplot_metric(filepath,metric,outdir=out_path, format='png')
+        return interface.boxplot_metric(filepath,metric,out_dir=out_path, format='png')
 
 def usecase():
     #start_usecase(usecase='qa4sm_ismn')

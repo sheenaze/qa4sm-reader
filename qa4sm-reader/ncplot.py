@@ -14,7 +14,7 @@ def get_metric_var(filepath, metric):
         variables = [var for var in ds.data_vars if re.search(r'^{}(_between|$)'.format(metric), var, re.I)] #TODO: unexpected behaviour. n_obs is matched, altough there is no '_between'. #TODO: n_obs should also be matched (var in df is 'n_obs')
     return variables
 
-def boxplot(filepath, variables, outdir=None, outname=None, format=None , **plot_kwargs):
+def boxplot(filepath, variables, out_dir=None, out_name=None, format=None , **plot_kwargs):
     """
     Creates a boxplot, displaying the variables given as input. 
     Saves a figure and returns Matplotlib fig and ax objects for further processing.
@@ -25,11 +25,11 @@ def boxplot(filepath, variables, outdir=None, outname=None, format=None , **plot
         Path to the *.nc file to be processed.
     variables : str of list of str
         Variables to be plotted.
-    outdir : [ None | str ], optional
+    out_dir : [ None | str ], optional
         Path to output file format. 
         If None, defaults to, the input filepath.
         The default is None.
-    outname : [ None | str ], optional
+    out_name : [ None | str ], optional
         Name of output file. 
         If None, defaults to a name that is generated based on the variables.
         The default is None.
@@ -66,11 +66,11 @@ def boxplot(filepath, variables, outdir=None, outname=None, format=None , **plot
 
     # == save figure ===
     if format:
-        if not outdir:
-            outdir = os.path.dirname(__file__)
-        if not outname:
-            outname = 'boxplot_' + '__'.join([var for var in variables])
-        filename = os.path.join(outdir,outname)
+        if not out_dir:
+            out_dir = os.path.dirname(__file__)
+        if not out_name:
+            out_name = 'boxplot_' + '__'.join([var for var in variables])
+        filename = os.path.join(out_dir,out_name)
         if type(format) is not list: format = [format] 
         for ending in format:
             plt.savefig('{}.{}'.format(filename, ending), dpi='figure')
@@ -79,7 +79,7 @@ def boxplot(filepath, variables, outdir=None, outname=None, format=None , **plot
     #plt.close()
     return fig,ax
 
-def mapplot(filepath, var, outdir=None, outname=None, format=None, **plot_kwargs):
+def mapplot(filepath, var, out_dir=None, out_name=None, format=None, **plot_kwargs):
     #TODO: do something when var is not a string but a list. (e.g. call list plot function)
     if type(var) == list: var = var[0]
     # === Get ready... ===
@@ -97,11 +97,11 @@ def mapplot(filepath, var, outdir=None, outname=None, format=None, **plot_kwargs
 
     # == save figure ===
     if format:
-        if not outdir:
-            outdir = os.path.dirname(__file__)
-        if not outname:
-            outname = 'mapplot_' + var
-        filename = os.path.join(outdir,outname)
+        if not out_dir:
+            out_dir = os.path.dirname(__file__)
+        if not out_name:
+            out_name = 'mapplot_' + var
+        filename = os.path.join(out_dir,out_name)
         if type(format) is not list: format = [format] 
         for ending in format:
             plt.savefig('{}.{}'.format(filename, ending), dpi='figure')
