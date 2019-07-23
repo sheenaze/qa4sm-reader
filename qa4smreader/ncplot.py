@@ -1,45 +1,43 @@
 # -*- coding: utf-8 -*-
 """
-Contains an interface for opening QA4SM output files (*.nc) and producing plots using the dfplot module in this package.
+Contains an interface for opening QA4SM output files (*.nc), 
+loading certain parts as pandas.DataFrame 
+and producing plots using the dfplot module in this package.
+Internally, xarray is used to open the NetCDF files.
 """
-import dfplot
-import globals
+from qa4smreader import dfplot
+from qa4smreader import globals
 import xarray as xr
 import matplotlib.pyplot as plt
 import re
 import os
 
-def get_metric_var(filepath, metric):
-    with xr.open_dataset(filepath) as ds:
-        variables = [var for var in ds.data_vars if re.search(r'^{}(_between|$)'.format(metric), var, re.I)] #TODO: unexpected behaviour. n_obs is matched, altough there is no '_between'. #TODO: n_obs should also be matched (var in df is 'n_obs')
-    return variables
-
-def boxplot(filepath, variables, out_dir=None, out_name=None, format=None , **plot_kwargs):
+def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type=None , **plot_kwargs):
     """
-    Creates a boxplot, displaying the variables given as input. 
+    Creates a boxplot, displaying the variables corresponding to given metric.
     Saves a figure and returns Matplotlib fig and ax objects for further processing.
     
     Parameters
     ----------
     filepath : str
         Path to the *.nc file to be processed.
-    variables : str of list of str
-        Variables to be plotted.
+    metric : str of list of str
+        metric to be plotted.
+        alternatively a list of variables can be given.
+    extent : list
+        [x_min,x_max,y_min,y_max] to create a subset of the data
     out_dir : [ None | str ], optional
-        Path to output file format. 
+        Path to output generated plot. 
         If None, defaults to, the input filepath.
         The default is None.
     out_name : [ None | str ], optional
         Name of output file. 
         If None, defaults to a name that is generated based on the variables.
         The default is None.
-    format : [ None | str ], optional
-        The file format, e.g. 'png', 'pdf', 'svg', 'tiff'...
+    out_type : [ None | str ], optional
+        The file type, e.g. 'png', 'pdf', 'svg', 'tiff'...
         If None, no file is saved.
         The default is png.
-    dpi : [ None | scalar > 0 | 'figure' ]
-        The resolution in dots per inch. If None, defaults to rcParams["savefig.dpi"]. If 'figure', uses the figure's dpi value.
-        The default is None.
     **plot_kwargs : dict, optional
         Additional keyword arguments that are passed to dfplot.
 
@@ -51,43 +49,88 @@ def boxplot(filepath, variables, out_dir=None, out_name=None, format=None , **pl
         Axes or list of axes containing the plot.
 
     """
-    if type(variables) is str: variables = [variables] #convert to list of string
+    if type(metric) is str:
+        variables = get_metric_var(filepath, metric)
+    else:
+        variables = metric #metric already contais the variables to be plotted.
 
     # === Get ready... ===
     with xr.open_dataset(filepath) as ds:
         # === Get Metadata ===
-        varmeta = get_varmeta(variables, ds)
-        globmeta = get_globmeta(varmeta)
+        varmeta = _get_varmeta(variables, ds)
+        globmeta = _get_globmeta(varmeta)
         # === Load data ===
-        df = load_data(ds, variables, globals.index_names)
+        df = _load_data(ds, variables, extent, globals.index_names)
 
     # === plot data ===
     fig,ax = dfplot.boxplot(df=df, varmeta = varmeta, globmeta = globmeta, **plot_kwargs)
 
-    # == save figure ===
-    if format:
+    # === save figure ===
+    if out_type:
         if not out_dir:
             out_dir = os.path.dirname(__file__)
         if not out_name:
             out_name = 'boxplot_' + '__'.join([var for var in variables])
         filename = os.path.join(out_dir,out_name)
-        if type(format) is not list: format = [format] 
-        for ending in format:
+        if type(out_type) is not list: out_type = [out_type]
+        for ending in out_type:
             plt.savefig('{}.{}'.format(filename, ending), dpi='figure')
+        plt.close()
+        return
+    elif out_name:
+        if out_name.find('.') == -1: #append '.png'out_name contains no '.', which is hopefully followed by a meaningful file ending.
+            out_name += '.png'
+        filename = os.path.join(out_dir,out_name)
+        plt.savefig(filename)
+        plt.close()
+        return
     else:
-        plt.show()
-    #plt.close()
-    return fig,ax
+        return fig,ax
 
-def mapplot(filepath, var, out_dir=None, out_name=None, format=None, **plot_kwargs):
+def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=None, **plot_kwargs):
+    """
+    Plots data to a map, using the data as color. Plots a scatterplot for ISMN and a image plot for other input data.
+    Saves a figure and returns Matplotlib fig and ax objects for further processing.
+    
+    Parameters
+    ----------
+    filepath : str
+        Path to the *.nc file to be processed.
+    var : str
+        variable to be plotted.
+    extent : list
+        [x_min,x_max,y_min,y_max] to create a subset of the data
+    out_dir : [ None | str ], optional
+        Path to output generated plot. 
+        If None, defaults to, the input filepath.
+        The default is None.
+    out_name : [ None | str ], optional
+        Name of output file. 
+        If None, defaults to a name that is generated based on the variables.
+        The default is None.
+    out_type : [ None | str ], optional
+        The file type, e.g. 'png', 'pdf', 'svg', 'tiff'...
+        If None, no file is saved.
+        The default is png.
+    **plot_kwargs : dict, optional
+        Additional keyword arguments that are passed to dfplot.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure containing the axes for further processing.
+    ax : matplotlib.axes.Axes or list of Axes objects
+        Axes or list of axes containing the plot.
+
+    """
     #TODO: do something when var is not a string but a list. (e.g. call list plot function)
     if type(var) == list: var = var[0]
     # === Get ready... ===
     with xr.open_dataset(filepath) as ds:
         # === Get Metadata ===
-        meta = get_meta(var, ds)
+        meta = _get_meta(var, ds)
         # === Load data ===
-        df = load_data(ds, var, globals.index_names)
+        df = _load_data(ds, var, extent, globals.index_names)
 
     # === plot data ===
     if ( meta['ds'] in globals.scattered_datasets or meta['ref'] in globals.scattered_datasets ): #do scatterplot
@@ -96,21 +139,57 @@ def mapplot(filepath, var, out_dir=None, out_name=None, format=None, **plot_kwar
         fig,ax = dfplot.mapplot(df=df, var = var, meta = meta, **plot_kwargs)
 
     # == save figure ===
-    if format:
+    if out_type:
         if not out_dir:
             out_dir = os.path.dirname(__file__)
         if not out_name:
             out_name = 'mapplot_' + var
         filename = os.path.join(out_dir,out_name)
-        if type(format) is not list: format = [format] 
-        for ending in format:
+        if type(out_type) is not list: out_type = [out_type]
+        for ending in out_type:
             plt.savefig('{}.{}'.format(filename, ending), dpi='figure')
+    elif out_name:
+        if out_name.find('.') == -1: #append '.png'out_name contains no '.', which is hopefully followed by a meaningful file ending.
+            out_name += '.png'
+        filename = os.path.join(out_dir,out_name)
+        plt.savefig(filename, dpi='figure')
     else:
         plt.show()
     plt.close()
     #return fig,ax
 
-def load_data(ds,variables,index_names):
+def load(filepath, metric, extent=None, index_names=globals.index_names):
+    "returns DataFrame, varmeta and globmeta"
+    with xr.open_dataset(filepath) as ds:
+        variables = _get_metric_var(ds, metric)
+        varmeta = _get_varmeta(variables, ds)
+        globmeta = _get_globmeta(varmeta)
+        df = _load_data(ds, variables, extent, index_names)
+    return df, varmeta, globmeta
+
+def get_metric_var(filepath, metric):
+    "Searches the dataset for variables that contain a certain metric and returns a list of strings."
+    with xr.open_dataset(filepath) as ds:
+        variables = _get_metric_var(ds,metric)
+    return variables
+
+def _get_metric_var(ds, metric):
+    "Searches the dataset for variables that contain a certain metric and returns a list of strings."
+    if metric == 'n_obs': #n_obs is a special case, that does not match the usual pattern with *_between*
+        return [metric]
+    else:
+        return [var for var in ds.data_vars if re.search(r'^{}_between'.format(metric), var, re.I)]
+
+
+def load_data(filepath, variables, extent=None, index_names=globals.index_names):
+    """
+    converts xarray.DataSet to pandas.DataFrame, reading only relevant variables and multiindex
+    """
+    with xr.open_dataset(filepath) as ds:
+        df = _load_data(ds, variables, extent, index_names)
+    return df
+
+def _load_data(ds, variables, extent, index_names):
     """
     converts xarray.DataSet to pandas.DataFrame, reading only relevant variables and multiindex
     """
@@ -119,9 +198,21 @@ def load_data(ds,variables,index_names):
         df = ds[index_names + variables].to_dataframe()
     except KeyError as e:
         raise Exception('The given variabes '+ ', '.join(variables) + ' do not match the names in the input data.' + str(e))
-    return df.dropna(axis='index',subset=variables)
+    df.dropna(axis='index',subset=variables, inplace=True)
+    if extent: # === geographical subset ===
+        lat,lon = globals.index_names
+        df=df[ (df.lon>=extent[0]) & (df.lon<=extent[1]) & (df.lat>=extent[2]) & (df.lat<=extent[3]) ]
+    return df
 
-def get_meta(var,ds):
+def get_meta(filepath,var):
+    """
+    parses the var name and gets metadata from tha *.nc dataset.
+    checks consistency between the dataset and the variable name.
+    """
+    with xr.open_dataset(filepath) as ds:
+        return _get_meta(var,ds)
+
+def _get_meta(var,ds):
     """
     parses the var name and gets metadata from tha *.nc dataset.
     checks consistency between the dataset and the variable name.
@@ -160,13 +251,28 @@ def get_meta(var,ds):
         raise Exception('There is a problem with the dataset attributes:\n' + str(e))
     return meta
 
-def get_varmeta(variables,ds):
+def get_varmeta(filepath, variables):
     """
     get meta for all variables and return a nested dict.
     """
-    return {var:get_meta(var,ds) for var in variables}
+    with xr.open_dataset(filepath) as ds:
+        return _get_varmeta(variables,ds)
 
-def get_globmeta(varmeta):
+def _get_varmeta(variables,ds):
+    """
+    get meta for all variables and return a nested dict.
+    """
+    return {var:_get_meta(var,ds) for var in variables}
+
+def get_globmeta(filepath, variables):
+    """
+    get globmeta from varmeta and make sure it is consistent in itself.
+    """
+    varmeta = get_varmeta(filepath,variables)
+    return _get_globmeta(varmeta)
+
+
+def _get_globmeta(varmeta):
     """
     get globmeta from varmeta and make sure it is consistent in itself.
     """
@@ -184,7 +290,3 @@ def get_globmeta(varmeta):
         except StopIteration:
             break
     return globmeta
-
-import usecases #for debugging
-if __name__ == '__main__':
-    usecases.usecase()

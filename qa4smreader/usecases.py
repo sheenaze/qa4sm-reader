@@ -6,7 +6,7 @@ Module description
 
 # NOTES #
 
-import ncplot
+from qa4smreader import ncplot
 import os
 import cartopy.crs as ccrs
 
@@ -48,16 +48,6 @@ def start_usecase(usecase):
         ncplot.boxplot(filepath,variables,out_dir=out_path,
                           format=['png','svg'])
 
-    if usecase == 'qa4sm_ismn-error':
-        variables = ['rho_between_4-ISMN_1-C3S', 'ubRMSD_between_4-ISMN_2-SMAP', 'rho_between_4-ISMN_2-SMAP']
-        filepath = os.path.join(this_dir, 'test_data', testfiles['4-ISMN'])
-        ncplot.boxplot(filepath,variables)
-
-    if usecase == 'asdf':
-        variables = ['R_between_5-ISMN_1-C3S', 'R_between_5-ISMN_2-SMAP', 'R_between_5-ISMN_3-ASCAT', 'R_between_5-ISMN_4-SMOS']
-        filepath = os.path.join(this_dir, 'test_data', testfiles['5-ISMN'])
-        ncplot.boxplot(filepath,variables,out_dir=out_path,watermark_pos='bottom', format='png')
-
     if usecase == 'map':
         variable = ['R_between_5-ISMN_1-C3S']#, 'R_between_5-ISMN_2-SMAP', 'R_between_5-ISMN_3-ASCAT', 'R_between_5-ISMN_4-SMOS']
         filepath = os.path.join(this_dir, 'test_data', testfiles['5-ISMN'])
@@ -74,11 +64,6 @@ def start_usecase(usecase):
                                  projection=ccrs.PlateCarree(), dpi=300) #,
                                   #llc=(-120,20), urc=(-95,40))
 
-    if usecase == 'boxplot-metric':
-        metric = 'ubrmsd'
-        filepath = os.path.join(this_dir, 'test_data', '5-ISMN.soil moisture_with_1-C3S.sm_with_2-SMAP.soil_moisture_with_3-ASCAT.sm_with_4-SMOS.Soil_Moisture.nc')
-        return ncplot.boxplot_metric(filepath,metric,out_dir=out_path, format='png')
-
 def usecase():
     #start_usecase(usecase='qa4sm_ismn')
     #start_usecase(usecase='qa4sm_ismn_save')
@@ -92,6 +77,6 @@ def usecase():
 
 
 
+from qa4smreader import usecases #for debugging
 if __name__ == '__main__':
-    fig,ax = usecase()
-    fig,ax
+    usecases.usecase()

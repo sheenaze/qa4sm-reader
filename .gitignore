@@ -5,7 +5,7 @@ qa4smreader/__pycache__/
 *.pyc
 #exclude plot outputs
 qa4smreader/tests/test_data
-qa4smreader/tests/out
+qa4smreader/tests/test_results
 #exclude test.py
 test.py
 #exclude cartopy cache

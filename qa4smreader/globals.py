@@ -108,7 +108,7 @@ naturalearth_resolution = '110m' #choose from '10m', '50m' and '110m'
 crs = ccrs.PlateCarree()
 markersize = 4 # diameter in points.
 map_pad = 0.15 # padding relative to map height.
-grid_intervals = [0.5,1,5,10,30] #grid delta to choose from (plotter will try to make 5 gridlines in the smaller dimension)
+grid_intervals = [0.5,1,2,5,10,30] #grid delta to choose from (plotter will try to make 5 gridlines in the smaller dimension)
 
 # === boxplot defaults ===
 boxplot_printnumbers = True
@@ -120,12 +120,6 @@ watermark_pos = 'top'
 watermark_fontsize = 10 #in points
 watermark_pad = 5 #in points (matplotlib uses 72ppi)
 
-
-
-
-
-
-
-import usecases #for debugging
+import qa4smreader.usecases as usecases #for debugging
 if __name__ == '__main__':
     usecases.usecase()
