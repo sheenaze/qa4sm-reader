@@ -703,6 +703,6 @@ def debug_tight_layout(fig):
     print('spacing if using fontsize as padding\n   left/right: {:.3f}, top/bottom: {:.3f}'.format(
             *(matplotlib.rcParams['font.size'] / 72) / fig.get_size_inches()))
 
-import plotter_usecases #for debugging
+import usecases #for debugging
 if __name__ == '__main__':
-    plotter_usecases.usecase()
+    usecases.usecase()

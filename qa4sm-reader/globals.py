@@ -126,6 +126,6 @@ watermark_pad = 5 #in points (matplotlib uses 72ppi)
 
 
 
-import plotter_usecases #for debugging
+import usecases #for debugging
 if __name__ == '__main__':
-    plotter_usecases.usecase()
+    usecases.usecase()

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Contains an interface for opening QA4SM output files (*.nc) and producing plots using the plotter module in this package.
+Contains an interface for opening QA4SM output files (*.nc) and producing plots using the dfplot module in this package.
 """
-import plotter
+import dfplot
 import globals
 import xarray as xr
 import matplotlib.pyplot as plt
@@ -41,7 +41,7 @@ def boxplot(filepath, variables, out_dir=None, out_name=None, format=None , **pl
         The resolution in dots per inch. If None, defaults to rcParams["savefig.dpi"]. If 'figure', uses the figure's dpi value.
         The default is None.
     **plot_kwargs : dict, optional
-        Additional keyword arguments that are passed to the plotter.
+        Additional keyword arguments that are passed to dfplot.
 
     Returns
     -------
@@ -62,7 +62,7 @@ def boxplot(filepath, variables, out_dir=None, out_name=None, format=None , **pl
         df = load_data(ds, variables, globals.index_names)
 
     # === plot data ===
-    fig,ax = plotter.boxplot(df=df, varmeta = varmeta, globmeta = globmeta, **plot_kwargs)
+    fig,ax = dfplot.boxplot(df=df, varmeta = varmeta, globmeta = globmeta, **plot_kwargs)
 
     # == save figure ===
     if format:
@@ -91,9 +91,9 @@ def mapplot(filepath, var, out_dir=None, out_name=None, format=None, **plot_kwar
 
     # === plot data ===
     if ( meta['ds'] in globals.scattered_datasets or meta['ref'] in globals.scattered_datasets ): #do scatterplot
-        fig,ax = plotter.scatterplot(df=df, var = var, meta = meta, **plot_kwargs)
+        fig,ax = dfplot.scatterplot(df=df, var = var, meta = meta, **plot_kwargs)
     else:
-        fig,ax = plotter.mapplot(df=df, var = var, meta = meta, **plot_kwargs)
+        fig,ax = dfplot.mapplot(df=df, var = var, meta = meta, **plot_kwargs)
 
     # == save figure ===
     if format:
@@ -185,6 +185,6 @@ def get_globmeta(varmeta):
             break
     return globmeta
 
-import plotter_usecases #for debugging
+import usecases #for debugging
 if __name__ == '__main__':
-    plotter_usecases.usecase()
+    usecases.usecase()
