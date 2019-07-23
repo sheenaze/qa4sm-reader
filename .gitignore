@@ -1,12 +1,12 @@
 #exclude spyder project files
 .spyproject/
 #exclude precompiled code
-qa4sm-reader/__pycache__/
+qa4smreader/__pycache__/
 *.pyc
 #exclude plot outputs
-qa4sm-reader/tests/test_data
-qa4sm-reader/tests/out
+qa4smreader/tests/test_data
+qa4smreader/tests/out
 #exclude test.py
 test.py
 #exclude cartopy cache
-qa4sm-reader/cartopy/
+qa4smreader/cartopy/
