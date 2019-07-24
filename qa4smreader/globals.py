@@ -17,10 +17,10 @@ _metric_value_ranges = { #from /qa4sm/validator/validation/graphics.py
     'n_obs': [0, None],
     'ubRMSD': [0, None],
     'RSS': [0, None],
-    'mse' : [None, None], #[0, None] #mse only positive (https://en.wikipedia.org/wiki/Mean_squared_error)
-    'mse_corr' : [None, None], #[0, None] #mse_corr only positive
-    'mse_bias' : [None, None], #[0, None] #mse_bias only positive
-    'mse_var' : [None, None], #[0, None] #mse_var only positive
+    'mse' : [0, None], #[0, None] #mse only positive (https://en.wikipedia.org/wiki/Mean_squared_error)
+    'mse_corr' : [0, None], #[0, None] #mse_corr only positive
+    'mse_bias' : [0, None], #[0, None] #mse_bias only positive
+    'mse_var' : [0, None], #[0, None] #mse_var only positive
 }
 
 # label format for all metrics
@@ -44,24 +44,27 @@ _metric_description = { #from /qa4sm/validator/validation/graphics.py
 # TODO: use colormap objects here instead of names
 # more on colormaps: https://matplotlib.org/users/colormaps.html | https://morphocode.com/the-use-of-color-in-maps/
 # colorcet: http://colorcet.pyviz.org/user_guide/Continuous.html
-# diverging: 1 good, 0 special, -1 bad (pearson's R, spearman's rho') matplotlib.cm.RdYlBu | colorcet.cm.coolwarm_r
-# diverging: zero good, +/- neutral: (bias):  colorcet.cm.gwv |  colorcet.cm.bwy
-# sequential: increasing value bad (p_R, p_rho, rmsd, ubRMSD, RSS, ): matplotlib.cm.YlOrRd | colorcet.cm.fire
-# sequential: increasing value good (n_obs):
+
+_cclasses = {
+        'div_better' : 'RdYlBu', # diverging: 1 good, 0 special, -1 bad (pearson's R, spearman's rho') 'cet_coolwarm_r', 'cet_CET_D8_r'],
+        'div_neutr' : 'RdYlGn', # diverging: zero good, +/- neutral: (bias):  'Spectral', 'cet_CET_D3', 'cet_gwv', 'cet_bwy', 'cet_bjy'],
+        'seq_worse' : 'cet_CET_L4_r', # sequential: increasing value bad (p_R, p_rho, rmsd, ubRMSD, RSS, ):
+        'seq_better' : 'cet_CET_L4' # sequential: increasing value good (n_obs):
+            }
+
 _colormaps = { #from /qa4sm/validator/validation/graphics.py
-    'R': 'RdYlBu',
-    'p_R': 'YlOrRd',
-    'rho': 'RdYlBu',
-    'p_rho': 'RdYlBu_r',
-    'rmsd': 'RdYlBu_r',
-    'bias': 'coolwarm', #red rather stands for bad, but negative and positive bias do not mean good or bad.
-    'n_obs': 'RdYlBu',
-    'ubRMSD': 'RdYlBu_r',
-    'RSS': 'RdYlBu_r',
-    'mse' : 'RdYlBu_r',
-    'mse_corr' : 'RdYlBu_r',
-    'mse_bias' : 'RdYlBu_r',
-    'mse_var' : 'RdYlBu_r',
+    'R': _cclasses['div_better'],
+    'p_R': _cclasses['seq_worse'],
+    'rho': _cclasses['div_better'],
+    'p_rho': _cclasses['seq_worse'],
+    'rmsd': _cclasses['seq_worse'],
+    'bias': _cclasses['div_neutr'],
+    'n_obs': _cclasses['seq_better'],
+    'ubRMSD': _cclasses['seq_worse'],
+    'mse' : _cclasses['seq_worse'],
+    'mse_corr' : _cclasses['seq_worse'],
+    'mse_bias' : _cclasses['seq_worse'],
+    'mse_var' : _cclasses['seq_worse'],
 }
 
 # units for all datasets

@@ -3,7 +3,7 @@
 Contains plotting routines that take pd.DataFrames and metadata dictionaries 
 as input and return figure and axes objects.
 '''
-import qa4smreader.globals as globals
+from qa4smreader import globals
 
 import numpy as np
 import pandas as pd
@@ -28,7 +28,7 @@ import warnings
 
 import time
 
-def boxplot(df, varmeta, globmeta, printnumbers=globals.boxplot_printnumbers,
+def boxplot(df, varmeta, printnumbers=globals.boxplot_printnumbers,
             watermark_pos=globals.watermark_pos, figsize=globals.boxplot_figsize,
             dpi=globals.dpi, add_title=True, title_pad = globals.title_pad):
     """
@@ -52,9 +52,6 @@ def boxplot(df, varmeta, globmeta, printnumbers=globals.boxplot_printnumbers,
         DESCRIPTION.
     varmeta : dict
         dictionary of metadata for each var. See interface.get_varmeta().
-    globmeta : dict
-        dictionary of global metadata, shared among all variables. 
-        See interface.get_globmeta().
     printnumbers : bool, optional
         Wheter to print median, standard derivation and n_obs . 
         The default is globals.boxplot_printnumbers.
@@ -79,6 +76,8 @@ def boxplot(df, varmeta, globmeta, printnumbers=globals.boxplot_printnumbers,
         DESCRIPTION.
 
     """
+    df = df.copy(deep=False)
+    # TODO: drop everything not in varmeta.
     # === drop lat lon ===
     try:
         df.drop(columns=globals.index_names, inplace=True)
@@ -111,6 +110,7 @@ def boxplot(df, varmeta, globmeta, printnumbers=globals.boxplot_printnumbers,
     sns.despine()
 
     # === style ===
+    globmeta = _get_globmeta(varmeta)
     metric=globmeta['metric']
     ax.set_ylim(get_value_range(df, metric))
     ax.set_ylabel(globals._metric_name[metric] +
@@ -404,9 +404,7 @@ def get_value_range(ds, metric=None, force_quantile=False, quantiles=[0.025,0.97
     v_max : float
         upper value range of plot.
     extend : str
-        whether the data extends further than the computed range.
-        one of ['neither', 'min', 'max', 'both']
-
+        arg for colorbar. Whether to extend the colorbar using an arrow.
     """
     if metric == None: force_quantile=True
     if not force_quantile: #try to get range from globals
@@ -492,10 +490,10 @@ def get_plot_extent(df):
     extent[1] += padding
     extent[2] -= padding
     extent[3] += padding
-    if extent[0]<=-180: extent[0]=-180
-    if extent[1]>=180: extent[1]=180
-    if extent[2]<=-90: extent[2]=-90
-    if extent[3]>=90: extent[3]=90
+    if extent[0]<-180: extent[0]=-180
+    if extent[1]>180: extent[1]=180
+    if extent[2]<-90: extent[2]=-90
+    if extent[3]>90: extent[3]=90
     return extent
 
 def init_plot(figsize, dpi, add_cbar, projection=globals.crs):
@@ -510,9 +508,9 @@ def init_plot(figsize, dpi, add_cbar, projection=globals.crs):
         cax = None
     return fig, ax, cax
 
-def get_extend(ds, v_min, v_max):
+def get_cbarextend(ds, v_min, v_max):
     """
-    whether the data extends further than v_min, v_max.  
+    Find out whether the colorbar should extend, based on data and limits.  
 
     Parameters
     ----------
@@ -522,6 +520,8 @@ def get_extend(ds, v_min, v_max):
         lower value range of plot.
     v_max : float
         upper value range of plot.
+    metric : str
+        metric used in plot
 
     Returns
     -------
@@ -540,16 +540,42 @@ def get_extend(ds, v_min, v_max):
         else:
             return 'both'
 
+def get_cbarextend2(metric):
+    """
+    Find out whether the colorbar should extend, based on globals._metric_value_ranges[metric]
+
+    Parameters
+    ----------
+    metric : str
+        metric used in plot
+
+    Returns
+    -------
+    str
+        one of ['neither', 'min', 'max', 'both'].
+
+    """
+    vrange = globals._metric_value_ranges[metric]
+    if vrange[0]==None:
+        if vrange[1]==None: return 'both'
+        else: return 'min'
+    else:
+        if vrange[1]==None: return 'max'
+        else: return 'neither'
+
 def _make_cbar(fig, im, cax, ds, v_min, v_max, meta, label=None):
+    metric = meta['metric']
+    ref = meta['ref']
     if not label:
         try:
-            label = globals._metric_name[meta['metric']] + \
-                        globals._metric_description[meta['metric']].format(
-                                globals._metric_units[meta['ref']])
+            label = globals._metric_name[metric] + \
+                        globals._metric_description[metric].format(
+                                globals._metric_units[ref])
         except KeyError as e:
-            raise Exception('The metric \'{}\' or reference \'{}\' is not known.\n'.format(meta['metric'], meta['ref']) + str(e))
-    cbar = fig.colorbar(im, cax=cax, orientation='horizontal',
-                        extend=get_extend(ds,v_min,v_max))
+            raise Exception('The metric \'{}\' or reference \'{}\' is not known.\n'.format(metric, ref) + str(e))
+    #extend=get_cbarextend(ds,v_min,v_max)
+    extend=get_cbarextend2(metric)
+    cbar = fig.colorbar(im, cax=cax, orientation='horizontal', extend=extend)
     cbar.set_label(label) #, size=5)
     cbar.outline.set_linewidth(0.4)
     cbar.outline.set_edgecolor('black')
@@ -661,6 +687,25 @@ def make_watermark(fig,placement):
         fig.subplots_adjust(bottom=bottom+offset) #defaults to rc when none!
     else:
         pass
+
+def _get_globmeta(varmeta):
+    """
+    get globmeta from varmeta and make sure it is consistent in itself.
+    """
+    globkeys = ['metric', 'ref', 'ref_pretty_name', 'ref_version', 'ref_version_pretty_name']
+    def get_globdict(meta):
+        return {k:meta[k] for k in globkeys}
+    variter = iter(varmeta)
+    globmeta = get_globdict(varmeta[next(variter)])
+    while True: #for loop with iterator: compare if globmeta is universal among all variables
+        try:
+            var = next(variter)
+            if globmeta != get_globdict(varmeta[var]):
+                raise Exception('Global Metadata inconsistent among variables!\nglobmeta : {}\nvs.\nglobmeta(\'{}\') : {}'.format(
+                        globmeta, var, get_globdict(varmeta[var]) ) )
+        except StopIteration:
+            break
+    return globmeta
 
 def debug_tight_layout_gs(fig,gs):
     try:
