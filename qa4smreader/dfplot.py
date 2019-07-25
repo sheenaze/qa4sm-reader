@@ -74,32 +74,21 @@ def boxplot(df, varmeta, printnumbers=globals.boxplot_printnumbers,
         DESCRIPTION.
 
     """
-    df = df.copy(deep=False)
-    # TODO: drop everything not in varmeta.
-    # === drop lat lon ===
-    try:
-        df.drop(columns=globals.index_names, inplace=True)
-    except KeyError:
-        pass
+    # === select only relevant variables, creating a view of the passed DataFrame. This preserves also renaming the columns of the original DataFrame.
+    df = df[varmeta]
 
     # === rename columns = label of box ===
-    if printnumbers:
-        # === calculate mean, std dev, Nobs ===
-        for var in varmeta:
-            varmeta[var]['median'] = df[var].median()
-            varmeta[var]['stddev'] = df[var].std()
-            varmeta[var]['Nobs'] = df[var].count()
-        # === rename columns before plotting ===
+    if printnumbers: # === rename columns before plotting ===
         df.columns = ['{0}\n({1})\nmedian: {2:.3g}\nstd. dev.: {3:.3g}\nN obs.: {4:d}'.format(
                 varmeta[var]['ds_pretty_name'],
                 varmeta[var]['ds_version_pretty_name'],
-                varmeta[var]['median'],
-                varmeta[var]['stddev'],
-                varmeta[var]['Nobs']) for var in varmeta]
+                df[var].median(),
+                df[var].std(),
+                df[var].count()  ) for var in varmeta]
     else:
         df.columns = ['{}\n{}'.format(
                 varmeta[var]['ds_pretty_name'],
-                varmeta[var]['ds_version_pretty_name']) for var in varmeta]
+                varmeta[var]['ds_version_pretty_name']  ) for var in varmeta]
 
     # === plot ===
     fig,ax = plt.subplots(figsize=figsize, dpi=dpi) #tight_layout = True,
@@ -116,14 +105,24 @@ def boxplot(df, varmeta, printnumbers=globals.boxplot_printnumbers,
 
     # === generate title with automatic line break ===
     if add_title:
-        plot_title = list() #each list element is a line in the plot title
-        plot_title.append('Comparing {} to '.format(globmeta['ref_pretty_name']))
-        for var in varmeta:
-            to_append = '{}, '.format(varmeta[var]['ds_pretty_name'])
-            if len(plot_title[-1] + to_append) <= globals.max_title_len: #line not to long: add to current line
-                plot_title[-1] += to_append
-            else: #add to next line
-                plot_title.append(to_append)
+        if globmeta['metric'] == 'n_obs': #special case n_obs.
+            plot_title = list() #each list element is a line in the plot title
+            plot_title.append('Number of spacial and temporal matches between {} ({})'.format(globmeta['ref_pretty_name'],globmeta['ref_version_pretty_name']) )
+            for name in varmeta['n_obs']['ds_pretty_name']:
+                to_append = '{}, '.format(name)
+                if len(plot_title[-1] + to_append) <= globals.max_title_len: #line not to long: add to current line
+                    plot_title[-1] += to_append
+                else: #add to next line
+                    plot_title.append(to_append)
+        else:
+            plot_title = list() #each list element is a line in the plot title
+            plot_title.append('Comparing {} ({}) to '.format(globmeta['ref_pretty_name'],globmeta['ref_version_pretty_name']))
+            for var in varmeta:
+                to_append = '{}, '.format(varmeta[var]['ds_pretty_name'])
+                if len(plot_title[-1] + to_append) <= globals.max_title_len: #line not to long: add to current line
+                    plot_title[-1] += to_append
+                else: #add to next line
+                    plot_title.append(to_append)
         plot_title = '\n'.join(plot_title)[:-2] #join lines together and remove last ', '
         plot_title = ' and '.join(plot_title.rsplit(', ',1)) #replace last ', ' with ' and '
         ax.set_title(plot_title, pad=title_pad)
@@ -311,7 +310,7 @@ def mapplot(df, var, meta, title=None, label=None, plot_extent=None,
 
     return fig,ax
 
-def geotraj_to_geo2d(df, var):
+def geotraj_to_geo2d(df, var, index=globals.index_names):
     """
     Converts geotraj (list of lat, lon, value) to a regular grid over lon, lat.
     The data in df needs to be sampled from a regular grid, the order does not matter.
@@ -324,6 +323,9 @@ def geotraj_to_geo2d(df, var):
         DataFrame containing 'lat', 'lon' and 'var' Series.
     var : str
         variable to be converted.
+    index : tuple, optional
+        Tuple containing the names of lattitude and longitude index. Usually ('lat','lon')
+        The default is globals.index_names
 
     Returns
     -------
@@ -361,8 +363,8 @@ def geotraj_to_geo2d(df, var):
         "Return the indexes corresponding to a. a and the returned index is a numpy array."
         return((a-a_min)/da).astype('int')
 
-    xx = df[globals.index_names[1]] #lon
-    yy = df[globals.index_names[0]] #lat
+    xx = df[index[1]] #lon
+    yy = df[index[0]] #lat
     data = df[var]
 
     x_min, x_max, dx, len_x = _get_even(xx)

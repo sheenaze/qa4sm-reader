@@ -21,7 +21,6 @@ def get_metrics(filepath):
     with xr.open_dataset(filepath) as ds:
         metrics = _get_metrics(ds)
         try:
-            #metrics.remove('n_obs') #TODO: deal with n_obs
             metrics.remove('tau') #TODO: deal with tau: contains only nan, thus axes limits are nan and matplotlib throws an error.
             metrics.remove('p_tau')#line 115, in boxplot
             #ax.set_ylim(get_value_range(df, metric))
@@ -352,20 +351,38 @@ def _get_meta(ds,var):
     except AttributeError:
         if var == 'n_obs': #catch error occuring when var is 'n_obs'
             meta['metric'] = 'n_obs'
-            meta['ref_no'] = 1 #TODO: find a way to not hard-code this!
-            meta['ref'] = 'GLDAS'
-            meta['ds_no'] = 1
-            meta['ds'] = 'GLDAS'
+            sets = {}
+            i=1
+            while True:
+                try:
+                    sets[i] = ds.attrs['val_dc_dataset'+str(i-1)]
+                    i+=1
+                except:
+                    break
+            meta['ref_no'] = list(sets)[-1]
+            meta['ref'] = sets[meta['ref_no']]
+            meta['ds_no'] = list(sets)[:-1] #list instead of int
+            meta['ds'] = [sets[i] for i in meta['ds_no']] #list instead of str
         else:
             raise Exception('The given var \'{}\' does not match the regex pattern.'.format(var))
     # === get pretty names ===
     for i in ('ds','ref'):
         name = meta[i]
         number = meta[i+'_no']
-        pretty_name,version,version_pretty_name = _get_pretty_name(ds,name,number)
-        meta[i+'_pretty_name'] = pretty_name
-        meta[i+'_version'] = version
-        meta[i+'_version_pretty_name'] = version_pretty_name
+        if (type(name)==list) and (type(number)==list): # e.g. ds of n_obs are several: the rest needs to be list as well
+            meta[i+'_pretty_name'] = list()
+            meta[i+'_version'] = list()
+            meta[i+'_version_pretty_name'] = list()
+            for na, no in zip(name,number):
+                pretty_name,version,version_pretty_name = _get_pretty_name(ds,na,no)
+                meta[i+'_pretty_name'].append(pretty_name)
+                meta[i+'_version'].append(version)
+                meta[i+'_version_pretty_name'].append(version_pretty_name)
+        else: #usual case.
+            pretty_name,version,version_pretty_name = _get_pretty_name(ds,name,number)
+            meta[i+'_pretty_name'] = pretty_name
+            meta[i+'_version'] = version
+            meta[i+'_version_pretty_name'] = version_pretty_name
     return meta
 
 def get_varmeta(filepath, variables=None):
