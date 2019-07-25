@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import cartopy.crs as ccrs
+import cartopy.crs as ccrs #TODO: is it meaningful to create prjojection objects here?
 
 """
 Global variables collected from different sources.
@@ -8,19 +8,19 @@ Global variables collected from different sources.
 # === from qa4sm.validator.validation.graphics ===
 
 _metric_value_ranges = { #from /qa4sm/validator/validation/graphics.py
-    'R': [-1, 1], #TODO should we include negative correlation?
-    'p_R': [0, 1], #probability that observed corellation is statistical fluctuation #TODO should we pin the upper value to 1 (extremely unlikely to happen)
-    'rho': [-1, 1], #TODO should we include negative correlation?
-    'p_rho': [0, 1], #probability that observed corellation is statistical fluctuation (probability of null hypothesis: there is no correlation) #TODO should we pin the upper value to 1 (extremely unlikely to happen)
+    'R': [-1, 1],
+    'p_R': [0, 1], #probability that observed corellation is statistical fluctuation
+    'rho': [-1, 1],
+    'p_rho': [0, 1], #probability that observed corellation is statistical fluctuation (probability of null hypothesis: there is no correlation)
     'rmsd': [0, None],
     'bias': [None, None],
     'n_obs': [0, None],
     'ubRMSD': [0, None],
     'RSS': [0, None],
-    'mse' : [0, None], #[0, None] #mse only positive (https://en.wikipedia.org/wiki/Mean_squared_error)
-    'mse_corr' : [0, None], #[0, None] #mse_corr only positive
-    'mse_bias' : [0, None], #[0, None] #mse_bias only positive
-    'mse_var' : [0, None], #[0, None] #mse_var only positive
+    'mse' : [0, None], #mse only positive (https://en.wikipedia.org/wiki/Mean_squared_error)
+    'mse_corr' : [0, None], #mse_corr only positive
+    'mse_bias' : [0, None], #mse_bias only positive
+    'mse_var' : [0, None], #mse_var only positive
 }
 
 # label format for all metrics
@@ -70,7 +70,6 @@ _metric_name = { #from /qa4sm/validator/validation/globals.py
     }
 
 # colormaps used for plotting metrics
-# TODO: use colormap objects here instead of names
 # more on colormaps: https://matplotlib.org/users/colormaps.html | https://morphocode.com/the-use-of-color-in-maps/
 # colorcet: http://colorcet.pyviz.org/user_guide/Continuous.html
 

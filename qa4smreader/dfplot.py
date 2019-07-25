@@ -16,17 +16,15 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import matplotlib.gridspec as gridspec
-import colorcet as cc
+import colorcet as cc #even tough not used explicitely it adds colorcet colormaps to be found by matplotlib.cc.get_colormap()
 
 from cartopy import config as cconfig
 cconfig['data_dir'] = os.path.join(os.path.dirname(__file__), 'cartopy')
-import cartopy.crs as ccrs
+import cartopy.crs as ccrs #crs objects come from globals.py
 import cartopy.feature as cfeature
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 import warnings
-
-import time
 
 def boxplot(df, varmeta, printnumbers=globals.boxplot_printnumbers,
             watermark_pos=globals.watermark_pos, figsize=globals.boxplot_figsize,
