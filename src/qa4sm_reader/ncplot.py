@@ -1,18 +1,26 @@
 # -*- coding: utf-8 -*-
+
 """
 Contains an interface for opening QA4SM output files (*.nc), 
 loading certain parts as pandas.DataFrame 
 and producing plots using the dfplot module in this package.
 Internally, xarray is used to open the NetCDF files.
 """
-from qa4smreader import dfplot
-from qa4smreader import globals
+
+from qa4sm_reader import dfplot
+from qa4sm_reader import globals
 import xarray as xr
 import matplotlib.pyplot as plt
 import re
 import os
 
 import warnings
+
+__author__ = "Lukas Racbhauer"
+__copyright__ = "Lukas Racbhauer"
+__license__ = "mit"
+
+
 
 # === File level ===
 
@@ -404,8 +412,3 @@ def _get_varmeta(ds,variables=None):
             except ValueError:
                 warnings.warn('{} is not in variables.'.format(index))
     return {var:_get_meta(ds,var) for var in variables}
-
-
-# testfile = '5-ISMN.soil moisture_with_1-C3S.sm_with_2-SMAP.soil_moisture_with_3-ASCAT.sm_with_4-SMOS.Soil_Moisture.nc'
-# filepath = os.path.join('tests', 'test_data', testfile)
-# plot_all(filepath)

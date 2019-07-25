@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
+
 import cartopy.crs as ccrs #TODO: is it meaningful to create prjojection objects here?
+
+__author__ = "Lukas Racbhauer"
+__copyright__ = "Lukas Racbhauer"
+__license__ = "mit"
+
+
 
 """
 Global variables collected from different sources.
@@ -155,7 +162,3 @@ watermark = u'made with QA4SM (qa4sm.eodc.eu)'
 watermark_pos = 'top'
 watermark_fontsize = 10 #in points
 watermark_pad = 5 #in points (matplotlib uses 72ppi)
-
-import qa4smreader.usecases as usecases #for debugging
-if __name__ == '__main__':
-    usecases.usecase()

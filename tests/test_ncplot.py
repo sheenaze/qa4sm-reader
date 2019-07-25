@@ -1,5 +1,13 @@
-from qa4smreader import ncplot
+# -*- coding: utf-8 -*-
+
+from qa4sm_reader import ncplot
 import os
+
+__author__ = "Lukas Racbhauer"
+__copyright__ = "Lukas Racbhauer"
+__license__ = "mit"
+
+
 
 def test_get_var():
     testfile = '5-ISMN.soil moisture_with_1-C3S.sm_with_2-SMAP.soil_moisture_with_3-ASCAT.sm_with_4-SMOS.Soil_Moisture.nc'

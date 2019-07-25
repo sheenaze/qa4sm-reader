@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+
 '''
 Contains plotting routines that take pd.DataFrames and metadata dictionaries 
 as input and return figure and axes objects.
 '''
-from qa4smreader import globals
+
+from qa4sm_reader import globals
 
 import numpy as np
 import pandas as pd
@@ -25,6 +27,12 @@ import cartopy.feature as cfeature
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 import warnings
+
+__author__ = "Lukas Racbhauer"
+__copyright__ = "Lukas Racbhauer"
+__license__ = "mit"
+
+
 
 def boxplot(df, varmeta, printnumbers=globals.boxplot_printnumbers,
             watermark_pos=globals.watermark_pos, figsize=globals.boxplot_figsize,

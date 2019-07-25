@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 '''
 Module description
 '''
@@ -6,7 +7,7 @@ Module description
 
 # NOTES #
 
-from qa4smreader import ncplot
+from qa4sm_reader import ncplot
 import os
 import cartopy.crs as ccrs
 
@@ -15,6 +16,12 @@ out_path = os.path.join(this_dir, 'test_data', 'out')
 testfiles = {'4-GLDAS' : '4-GLDAS.SoilMoi0_10cm_inst_with_1-ESA_CCI_SM_combined.sm_with_2-SMAP.soil_moisture_with_3-SMOS.Soil_Moisture.nc',
              '4-ISMN' : '4-ISMN.soil moisture_with_1-C3S.sm_with_2-SMAP.soil_moisture_with_3-ESA_CCI_SM_combined.sm.nc',
              '5-ISMN' : '5-ISMN.soil moisture_with_1-C3S.sm_with_2-SMAP.soil_moisture_with_3-ASCAT.sm_with_4-SMOS.Soil_Moisture.nc'}
+
+
+__author__ = "Lukas Racbhauer"
+__copyright__ = "Lukas Racbhauer"
+__license__ = "mit"
+
 
 def start_usecase(usecase):
     if usecase == 'qa4sm_ismn':
@@ -75,8 +82,5 @@ def usecase():
     return start_usecase(usecase='map_gldas')
     #return start_usecase(usecase='boxplot-metric')
 
-
-
-from qa4smreader import usecases #for debugging
 if __name__ == '__main__':
     usecases.usecase()
