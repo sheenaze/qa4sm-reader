@@ -344,11 +344,11 @@ def geotraj_to_geo2d(df, var):
         return a
 
     def _get_even(a):
-        "Find the stepsize of a and return an evenly spaced array"
-        a = np.unique(a)
-        das = np.unique(np.diff(a)) #find stepsizes
-        da = das[0] #smallest stepsize
-        for d in das[1:]: #make sure, other stepsizes are multiple of dy
+        "Find the stepsize of the grid behind a and return the parameters for that grid axis."
+        a = np.unique(a) #get unique values
+        das = np.unique(np.diff(a)) #get unique stepsizes
+        da = das[0] #get smallest stepsize
+        for d in das[1:]: #make sure, all stepsizes are multiple of da
             da = _float_gcd(d, da)
         a_min = a[0]
         a_max = a[-1]
@@ -359,18 +359,22 @@ def geotraj_to_geo2d(df, var):
         "Return the index corresponding to a"
         return int((a-a_min)/da)
 
-    lons = df[globals.index_names[1]]
-    lats = df[globals.index_names[0]]
+    def _index2(a, a_min, da):
+        "Return the indexes corresponding to a. a and the returned index is a numpy array."
+        return((a-a_min)/da).astype('int')
+
+    xx = df[globals.index_names[1]] #lon
+    yy = df[globals.index_names[0]] #lat
     data = df[var]
 
-    x_min, x_max, dx, len_x = _get_even(lons)
-    y_min, y_max, dy, len_y = _get_even(lats)
+    x_min, x_max, dx, len_x = _get_even(xx)
+    y_min, y_max, dy, len_y = _get_even(yy)
 
-    zz = np.empty((len_y, len_x), dtype=np.float64)
-    zz[:] = np.nan
+    ii = _index2(yy,y_min,dy)
+    jj = _index2(xx,x_min,dx)
 
-    for x, y, z in zip(lons, lats, data): #TODO: speed up! takes 2s for 180k points
-        zz[_index(y, y_min, dy), _index(x, x_min, dx)] = z
+    zz = np.full((len_y, len_x), np.nan, dtype=np.float64)
+    zz[ii,jj] = data
 
     data_extent = (x_min-dx/2, x_max+dx/2, y_min-dy/2, y_max+dy/2)
 

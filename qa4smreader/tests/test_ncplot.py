@@ -127,4 +127,4 @@ if __name__ == '__main__':
     test_boxplot2_extent()
     test_scattermap_extent()
     test_gridmap_extent()
-    # test_plot_all_extent()
+    test_plot_all_extent()
