@@ -1,0 +1,15 @@
+name: qa4sm_reader
+channels:
+- defaults
+- conda-forge
+dependencies:
+- xarray
+- pandas
+- numpy
+- matplotlib
+- seaborn
+- cartopy
+- colorcet
+- pip
+- python=3
+- pip:
