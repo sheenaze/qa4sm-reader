@@ -308,6 +308,34 @@ def _get_meta(ds,var):
     parses the var name and gets metadata from tha *.nc dataset.
     checks consistency between the dataset and the variable name.
     """
+    def _get_pretty_name(ds, name, number):
+        """ 
+        Returns pretty_name, version and version_pretty_name.
+        First tries to find info from ds.attrs.
+        Then falls back to globals.
+        Then falls back to using name as pretty name.
+        """
+        try:
+            pretty_name = ds.attrs['val_dc_pretty_name' + str(number-1)]
+        except KeyError:
+            try:
+                pretty_name = globals._dataset_pretty_names[name]
+            except KeyError:
+                pretty_name = name
+        try:
+            version = ds.attrs['val_dc_version' + str(number-1)]
+            try:
+                version_pretty_name = ds.attrs['val_dc_version_pretty_name' + str(number-1)]
+            except KeyError:
+                try:
+                    version_pretty_name = globals._dataset_version_pretty_names[version]
+                except KeyError:
+                    version_pretty_name = version
+        except KeyError:
+            version = 'unknown'
+            version_pretty_name = 'unknown version'
+        return pretty_name, version, version_pretty_name
+
     # === consistency with dataset ===
     if not var in ds.data_vars:
         raise Exception('The given var \'{}\' is not contained in the dataset.'.format(var))
@@ -330,16 +358,14 @@ def _get_meta(ds,var):
             meta['ds'] = 'GLDAS'
         else:
             raise Exception('The given var \'{}\' does not match the regex pattern.'.format(var))
-    # === read ds metadata
-    try:
-        meta['ref_pretty_name'] = meta['ref'] #TODO: get pretty name from somewhere!
-        meta['ref_version'] = ds.attrs['val_dc_version' + str(meta['ref_no']-1)]
-        meta['ref_version_pretty_name'] = meta['ref_version'] #TODO: get versio pretty from somewhere!
-        meta['ds_pretty_name'] = meta['ds'] #TODO: get pretty name from somewhere!
-        meta['ds_version'] = ds.attrs['val_dc_version' + str(meta['ds_no']-1)]
-        meta['ds_version_pretty_name'] = meta['ds_version'] #TODO: get version pretty from somewhere!
-    except KeyError as e:
-        raise Exception('There is a problem with the dataset attributes:\n' + str(e))
+    # === get pretty names ===
+    for i in ('ds','ref'):
+        name = meta[i]
+        number = meta[i+'_no']
+        pretty_name,version,version_pretty_name = _get_pretty_name(ds,name,number)
+        meta[i+'_pretty_name'] = pretty_name
+        meta[i+'_version'] = version
+        meta[i+'_version_pretty_name'] = version_pretty_name
     return meta
 
 def get_varmeta(filepath, variables=None):

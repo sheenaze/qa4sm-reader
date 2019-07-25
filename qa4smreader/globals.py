@@ -47,7 +47,10 @@ _metric_units = { #from /qa4sm/validator/validation/graphics.py
     'GLDAS': r'm^3 m^{-3}',
     'ASCAT': r'percentage of saturation',
     'SMAP': r'm^3 m^{-3}',
-    'ERA5': r'm^3 m^{-3}'
+    'ERA5': r'm^3 m^{-3}',
+    'ERA' : r'm^3 m^{-3}', #by mistake, the dataset was called like this for some time.
+    'ESA_CCI_SM_combinded' : r'',
+    'SMOS' : r''
 }
 
 # === from qa4sm.validator.validation.globals ===
@@ -93,6 +96,37 @@ _colormaps = { #from /qa4sm/validator/validation/graphics.py
     'mse_corr' : _cclasses['seq_worse'],
     'mse_bias' : _cclasses['seq_worse'],
     'mse_var' : _cclasses['seq_worse'],
+}
+
+# === pretty names ===
+# pretty names for all datasets
+_dataset_pretty_names = { #from qa4sm\validator\fixtures\datasets.json
+    'ISMN': r'ISMN',
+    'C3S': r'C3S',
+    'GLDAS': r'GLDAS',
+    'ASCAT': r'H-SAF ASCAT SSM CDR',
+    'SMAP': r'SMAP level 3',
+    'ERA5': r'ERA5',
+    'ERA' : r'ERA5', #by mistake, the dataset was called like this for some time.
+    'ESA_CCI_SM_combined' : r'ESA CCI SM combined',
+    'SMOS' : r'SMOS IC'
+}
+
+_dataset_version_pretty_names = { #from qa4sm\validator\fixtures\versions.json
+    "C3S_V201706" : "v201706",
+    "SMAP_V5_PM" : "v5 PM/ascending",
+    "ASCAT_H113" : "H113",
+    "ISMN_V20180712_TEST" : "20180712 testset",
+    "ISMN_V20180712_MINI" : "20180712 mini testset",
+    "ISMN_V20180830_GLOBAL" : "20180830 global",
+    "GLDAS_NOAH025_3H_2_1" : "NOAH025 3H.2.1",
+    "GLDAS_TEST" : "TEST",
+    "C3S_V201812" : "v201812",
+    "ISMN_V20190222" : "20190222 global",
+    "ESA_CCI_SM_C_V04_4" : "v04.4",
+    "SMOS_105_ASC" : "V.105 Ascending",
+    "ERA5_test" : "ERA5 test",
+    "ERA5" : "ERA5"
 }
 
 # === plot defaults ===
