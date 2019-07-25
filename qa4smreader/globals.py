@@ -34,37 +34,10 @@ _metric_description = { #from /qa4sm/validator/validation/graphics.py
     'n_obs': '',
     'ubRMSD': r' in ${}$',
     'RSS': r' in $({})^2$',
-    'mse' : '',
-    'mse_corr' : '',
-    'mse_bias' : '',
-    'mse_var' : '',
-}
-
-# colormaps used for plotting metrics
-# TODO: use colormap objects here instead of names
-# more on colormaps: https://matplotlib.org/users/colormaps.html | https://morphocode.com/the-use-of-color-in-maps/
-# colorcet: http://colorcet.pyviz.org/user_guide/Continuous.html
-
-_cclasses = {
-        'div_better' : 'RdYlBu', # diverging: 1 good, 0 special, -1 bad (pearson's R, spearman's rho') 'cet_coolwarm_r', 'cet_CET_D8_r'],
-        'div_neutr' : 'RdYlGn', # diverging: zero good, +/- neutral: (bias):  'Spectral', 'cet_CET_D3', 'cet_gwv', 'cet_bwy', 'cet_bjy'],
-        'seq_worse' : 'cet_CET_L4_r', # sequential: increasing value bad (p_R, p_rho, rmsd, ubRMSD, RSS, ):
-        'seq_better' : 'cet_CET_L4' # sequential: increasing value good (n_obs):
-            }
-
-_colormaps = { #from /qa4sm/validator/validation/graphics.py
-    'R': _cclasses['div_better'],
-    'p_R': _cclasses['seq_worse'],
-    'rho': _cclasses['div_better'],
-    'p_rho': _cclasses['seq_worse'],
-    'rmsd': _cclasses['seq_worse'],
-    'bias': _cclasses['div_neutr'],
-    'n_obs': _cclasses['seq_better'],
-    'ubRMSD': _cclasses['seq_worse'],
-    'mse' : _cclasses['seq_worse'],
-    'mse_corr' : _cclasses['seq_worse'],
-    'mse_bias' : _cclasses['seq_worse'],
-    'mse_var' : _cclasses['seq_worse'],
+    'mse' : r' in $({})^2$',
+    'mse_corr' : r' in $({})^2$',
+    'mse_bias' : r' in $({})^2$',
+    'mse_var' : r' in $({})^2$',
 }
 
 # units for all datasets
@@ -95,6 +68,33 @@ _metric_name = { #from /qa4sm/validator/validation/globals.py
     'mse_bias' : 'Mean square error bias',
     'mse_var' : 'Mean square error variance',
     }
+
+# colormaps used for plotting metrics
+# TODO: use colormap objects here instead of names
+# more on colormaps: https://matplotlib.org/users/colormaps.html | https://morphocode.com/the-use-of-color-in-maps/
+# colorcet: http://colorcet.pyviz.org/user_guide/Continuous.html
+
+_cclasses = {
+        'div_better' : 'RdYlBu', # diverging: 1 good, 0 special, -1 bad (pearson's R, spearman's rho') 'cet_coolwarm_r', 'cet_CET_D8_r'],
+        'div_neutr' : 'RdYlGn', # diverging: zero good, +/- neutral: (bias):  'Spectral', 'cet_CET_D3', 'cet_gwv', 'cet_bwy', 'cet_bjy'],
+        'seq_worse' : 'cet_CET_L4_r', # sequential: increasing value bad (p_R, p_rho, rmsd, ubRMSD, RSS, ):
+        'seq_better' : 'cet_CET_L4' # sequential: increasing value good (n_obs):
+            }
+
+_colormaps = { #from /qa4sm/validator/validation/graphics.py
+    'R': _cclasses['div_better'],
+    'p_R': _cclasses['seq_worse'],
+    'rho': _cclasses['div_better'],
+    'p_rho': _cclasses['seq_worse'],
+    'rmsd': _cclasses['seq_worse'],
+    'bias': _cclasses['div_neutr'],
+    'n_obs': _cclasses['seq_better'],
+    'ubRMSD': _cclasses['seq_worse'],
+    'mse' : _cclasses['seq_worse'],
+    'mse_corr' : _cclasses['seq_worse'],
+    'mse_bias' : _cclasses['seq_worse'],
+    'mse_var' : _cclasses['seq_worse'],
+}
 
 # === plot defaults ===
 matplotlib_ppi = 72

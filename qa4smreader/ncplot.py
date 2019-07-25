@@ -20,7 +20,14 @@ def get_metrics(filepath):
     "Returns a list of metrics available in the current filepath"
     with xr.open_dataset(filepath) as ds:
         metrics = _get_metrics(ds)
-        metrics.remove('n_obs') #TODO: deal with n_obs
+        try:
+            #metrics.remove('n_obs') #TODO: deal with n_obs
+            metrics.remove('tau') #TODO: deal with tau: contains only nan, thus axes limits are nan and matplotlib throws an error.
+            metrics.remove('p_tau')#line 115, in boxplot
+            #ax.set_ylim(get_value_range(df, metric))
+            #ValueError: Axis limits cannot be NaN or 
+        except:
+            pass
     return metrics
 
 def _get_metrics(ds):
@@ -91,55 +98,6 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type=None , 
                 plt.savefig(fname,dpi='figure')
                 plt.close()
 
-    with xr.open_dataset(filepath) as ds:
-        metrics=_get_metrics(ds)
-        metricmeta=dict()
-        for metric in metrics:
-
-            metricmeta[metric]=_get_varmeta()
-        # === Get Metadata ===
-        varmeta = _get_varmeta(ds)
-        df=_load_data(ds,list(varmeta.keys()),extent=extent,index_names=globals.index_names)
-
-    # === Available Metrics ===
-    if not metrics: #get all available metrics
-        metrics=list()
-        for var in varmeta:
-            if varmeta[var]['metric'] not in metrics: metrics.append(varmeta[var]['metric'])
-
-    # === start plotting ===
-    if not out_dir: out_dir = os.path.dirname(__file__)
-    for metric in metrics:
-        # === make directory ===
-        curr_dir = os.path.join(out_dir,metric)
-        if not os.path.exists(curr_dir):
-            os.makedirs(curr_dir)
-
-        # === metadata ===
-        variables=[var for var in varmeta if varmeta[var]['metric'] == metric]
-
-        # === boxplot ===
-        fig,ax = dfplot.boxplot(df=df[variables], varmeta = varmeta[variables], **plot_kwargs)
-        # === save ===
-        out_name = 'boxplot_' + '__'.join([var for var in variables]) #TODO: write a function that produces meaningful names.
-        for ending in out_type:
-            fname = os.path.join(curr_dir,'{}.{}'.format(out_name,ending))
-            plt.savefig(fname,dpi='figure')
-            plt.close()
-
-        # === mapplot ===
-        for var in variables:
-            if ( varmeta[var]['ds'] in globals.scattered_datasets or varmeta[var]['ref'] in globals.scattered_datasets ): #do scatterplot
-                fig,ax = dfplot.scatterplot(df=df[var], var = var, meta = varmeta[var], **plot_kwargs)
-            else:
-                fig,ax = dfplot.mapplot(df=df[var], var = var, meta = varmeta[var], **plot_kwargs)
-            # === save ===
-            out_name = 'mapplot_' + var
-            for ending in out_type:
-                fname = os.path.join(curr_dir,'{}.{}'.format(out_name,ending))
-                plt.savefig(fname,dpi='figure')
-                plt.close()
-
 def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type=None , **plot_kwargs):
     """
     Creates a boxplot, displaying the variables corresponding to given metric.
@@ -196,6 +154,8 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
     # === save figure ===
     if out_type:
         if not out_dir: out_dir = os.path.dirname(__file__)
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
         if not out_name: out_name = 'boxplot_' + '__'.join([var for var in variables]) #TODO: write a function that produces meaningful names.
         filename = os.path.join(out_dir,out_name)
         if type(out_type) is not list: out_type = [out_type]
@@ -206,6 +166,8 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
     elif out_name:
         if out_name.find('.') == -1: #append '.png'out_name contains no '.', which is hopefully followed by a meaningful file ending.
             out_name += '.png'
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
         filename = os.path.join(out_dir,out_name)
         plt.savefig(filename)
         plt.close()
@@ -269,6 +231,8 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
     if out_type:
         if not out_dir:
             out_dir = os.path.dirname(__file__)
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
         if not out_name:
             out_name = 'mapplot_' + var
         filename = os.path.join(out_dir,out_name)
@@ -278,6 +242,8 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
     elif out_name:
         if out_name.find('.') == -1: #append '.png'out_name contains no '.', which is hopefully followed by a meaningful file ending.
             out_name += '.png'
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
         filename = os.path.join(out_dir,out_name)
         plt.savefig(filename, dpi='figure')
     else:
