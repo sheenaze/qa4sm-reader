@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 from pkg_resources import get_distribution, DistributionNotFound
+import qa4sm_reader.ncplot
+
+__all__ = ['ncplot']
 
 try:
     # Change here if project is renamed and does not equal the package name

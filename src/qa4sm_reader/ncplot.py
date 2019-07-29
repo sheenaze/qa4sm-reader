@@ -21,7 +21,6 @@ __copyright__ = "Lukas Racbhauer"
 __license__ = "mit"
 
 
-
 # === File level ===
 
 def get_metrics(filepath):
@@ -29,22 +28,26 @@ def get_metrics(filepath):
     with xr.open_dataset(filepath) as ds:
         metrics = _get_metrics(ds)
         try:
-            metrics.remove('tau') #TODO: deal with tau: contains only nan, thus axes limits are nan and matplotlib throws an error.
-            metrics.remove('p_tau')#line 115, in boxplot
-            #ax.set_ylim(get_value_range(df, metric))
-            #ValueError: Axis limits cannot be NaN or 
+            metrics.remove(
+                'tau')  # TODO: deal with tau: contains only nan, thus axes limits are nan and matplotlib throws an error.
+            metrics.remove('p_tau')  # line 115, in boxplot
+            # ax.set_ylim(get_value_range(df, metric))
+            # ValueError: Axis limits cannot be NaN or
         except:
             pass
     return metrics
 
+
 def _get_metrics(ds):
     varmeta = _get_varmeta(ds)
-    metrics=list()
+    metrics = list()
     for var in varmeta:
-            if varmeta[var]['metric'] not in metrics: metrics.append(varmeta[var]['metric'])
+        if varmeta[var]['metric'] not in metrics: metrics.append(varmeta[var]['metric'])
     return metrics
 
-def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type=None , boxplot_kwargs=dict(), mapplot_kwargs=dict()):
+
+def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', boxplot_kwargs=dict(),
+             mapplot_kwargs=dict()):
     """
     Creates boxplots for all metrics and map plots for all variables. Saves the output in a folder-structure.
     
@@ -59,7 +62,7 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type=None , 
         [x_min,x_max,y_min,y_max] to create a subset of the data
     out_dir : [ None | str ], optional
         Parrent directory where to generate the folder structure for all plots.
-        If None, defaults to the input filepath.
+        If None, defaults to the current working directory.
         The default is None.
     out_type : [ str | list | None ], optional
         The file type, e.g. 'png', 'pdf', 'svg', 'tiff'...
@@ -69,43 +72,50 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type=None , 
     **plot_kwargs : dict, optional
         Additional keyword arguments that are passed to dfplot.
     """
-    if type(out_type) is not list: out_type = [out_type]
+    if type(out_type) is not list:
+        out_type = [out_type]
+    if out_dir is None:
+        out_dir = os.path.join(os.getcwd(), os.path.basename(filepath))
 
     # === Metadata ===
-    metrics=get_metrics(filepath)
+    metrics = get_metrics(filepath)
 
     for metric in metrics:
         # === load data and metadata ===
-        df, varmeta = load(filepath,metric,extent)
+        df, varmeta = load(filepath, metric, extent)
 
         # === make directory ===
-        curr_dir = os.path.join(out_dir,metric)
+        curr_dir = os.path.join(out_dir, metric)
         if not os.path.exists(curr_dir):
             os.makedirs(curr_dir)
 
         # === boxplot ===
-        fig,ax = dfplot.boxplot(df, varmeta, **boxplot_kwargs)
+        fig, ax = dfplot.boxplot(df, varmeta, **boxplot_kwargs)
         # === save ===
-        out_name = 'boxplot_' + '__'.join([var for var in varmeta]) #TODO: write a function that produces meaningful names.
+        out_name = 'boxplot_' + '__'.join(
+            [var for var in varmeta])  # TODO: write a function that produces meaningful names.
         for ending in out_type:
-            fname = os.path.join(curr_dir,'{}.{}'.format(out_name,ending))
-            plt.savefig(fname,dpi='figure')
+            fname = os.path.join(curr_dir, '{}.{}'.format(out_name, ending))
+            plt.savefig(fname, dpi='figure')
             plt.close()
 
         # === mapplot ===
         for var in varmeta:
-            if ( varmeta[var]['ds'] in globals.scattered_datasets or varmeta[var]['ref'] in globals.scattered_datasets ): #do scatterplot
-                fig,ax = dfplot.scatterplot(df, var = var, meta = varmeta[var], **mapplot_kwargs)
+            if (varmeta[var]['ds'] in globals.scattered_datasets or varmeta[var][
+                'ref'] in globals.scattered_datasets):  # do scatterplot
+                fig, ax = dfplot.scatterplot(df, var=var, meta=varmeta[var], **mapplot_kwargs)
             else:
-                fig,ax = dfplot.mapplot(df, var = var, meta = varmeta[var], **mapplot_kwargs)
+                fig, ax = dfplot.mapplot(df, var=var, meta=varmeta[var], **mapplot_kwargs)
             # === save ===
             out_name = 'mapplot_' + var
             for ending in out_type:
-                fname = os.path.join(curr_dir,'{}.{}'.format(out_name,ending))
-                plt.savefig(fname,dpi='figure')
-                plt.close()
+                if out_type:  # don't attempt to save if None.
+                    fname = os.path.join(curr_dir, '{}.{}'.format(out_name, ending))
+                    plt.savefig(fname, dpi='figure')
+                    plt.close()
 
-def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type=None , **plot_kwargs):
+
+def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type=None, **plot_kwargs):
     """
     Creates a boxplot, displaying the variables corresponding to given metric.
     Saves a figure and returns Matplotlib fig and ax objects for further processing.
@@ -121,7 +131,7 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         [x_min,x_max,y_min,y_max] to create a subset of the data
     out_dir : [ None | str ], optional
         Path to output generated plot. 
-        If None, defaults to, the input filepath.
+        If None, defaults to the current working directory.
         The default is None.
     out_name : [ None | str ], optional
         Name of output file. 
@@ -146,7 +156,9 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
     if type(metric) is str:
         variables = get_var(filepath, metric)
     else:
-        variables = metric #metric already contais the variables to be plotted.
+        variables = metric  # metric already contais the variables to be plotted.
+    if out_dir is None:
+        out_dir = os.path.join(os.getcwd())
 
     # === Get ready... ===
     with xr.open_dataset(filepath) as ds:
@@ -156,31 +168,34 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         df = _load_data(ds, variables, extent, globals.index_names)
 
     # === plot data ===
-    fig,ax = dfplot.boxplot(df=df, varmeta = varmeta, **plot_kwargs)
+    fig, ax = dfplot.boxplot(df=df, varmeta=varmeta, **plot_kwargs)
 
     # === save figure ===
     if out_type:
         if not out_dir: out_dir = os.path.dirname(__file__)
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
-        if not out_name: out_name = 'boxplot_' + '__'.join([var for var in variables]) #TODO: write a function that produces meaningful names.
-        filename = os.path.join(out_dir,out_name)
+        if not out_name: out_name = 'boxplot_' + '__'.join(
+            [var for var in variables])  # TODO: write a function that produces meaningful names.
+        filename = os.path.join(out_dir, out_name)
         if type(out_type) is not list: out_type = [out_type]
         for ending in out_type:
             plt.savefig('{}.{}'.format(filename, ending), dpi='figure')
         plt.close()
         return
     elif out_name:
-        if out_name.find('.') == -1: #append '.png'out_name contains no '.', which is hopefully followed by a meaningful file ending.
+        if out_name.find(
+                '.') == -1:  # append '.png'out_name contains no '.', which is hopefully followed by a meaningful file ending.
             out_name += '.png'
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
-        filename = os.path.join(out_dir,out_name)
+        filename = os.path.join(out_dir, out_name)
         plt.savefig(filename)
         plt.close()
         return
     else:
-        return fig,ax
+        return fig, ax
+
 
 def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=None, **plot_kwargs):
     """
@@ -197,7 +212,7 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
         [x_min,x_max,y_min,y_max] to create a subset of the data
     out_dir : [ None | str ], optional
         Path to output generated plot. 
-        If None, defaults to, the input filepath.
+        If None, defaults to the current working directory.
         The default is None.
     out_name : [ None | str ], optional
         Name of output file. 
@@ -219,8 +234,11 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
         Axes or list of axes containing the plot.
 
     """
-    #TODO: do something when var is not a string but a list. (e.g. call list plot function)
-    if type(var) == list: var = var[0]
+    if out_dir is None:
+        out_dir = os.path.join(os.getcwd())
+    # TODO: do something when var is not a string but a list. (e.g. call list plot function)
+    if type(var) == list:
+        var = var[0]
     # === Get ready... ===
     with xr.open_dataset(filepath) as ds:
         # === Get Metadata ===
@@ -229,10 +247,10 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
         df = _load_data(ds, var, extent, globals.index_names)
 
     # === plot data ===
-    if ( meta['ds'] in globals.scattered_datasets or meta['ref'] in globals.scattered_datasets ): #do scatterplot
-        fig,ax = dfplot.scatterplot(df=df, var = var, meta = meta, **plot_kwargs)
+    if (meta['ds'] in globals.scattered_datasets or meta['ref'] in globals.scattered_datasets):  # do scatterplot
+        fig, ax = dfplot.scatterplot(df=df, var=var, meta=meta, **plot_kwargs)
     else:
-        fig,ax = dfplot.mapplot(df=df, var = var, meta = meta, **plot_kwargs)
+        fig, ax = dfplot.mapplot(df=df, var=var, meta=meta, **plot_kwargs)
 
     # == save figure ===
     if out_type:
@@ -242,21 +260,23 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
             os.makedirs(out_dir)
         if not out_name:
             out_name = 'mapplot_' + var
-        filename = os.path.join(out_dir,out_name)
+        filename = os.path.join(out_dir, out_name)
         if type(out_type) is not list: out_type = [out_type]
         for ending in out_type:
             plt.savefig('{}.{}'.format(filename, ending), dpi='figure')
     elif out_name:
-        if out_name.find('.') == -1: #append '.png'out_name contains no '.', which is hopefully followed by a meaningful file ending.
+        if out_name.find(
+                '.') == -1:  # append '.png'out_name contains no '.', which is hopefully followed by a meaningful file ending.
             out_name += '.png'
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
-        filename = os.path.join(out_dir,out_name)
+        filename = os.path.join(out_dir, out_name)
         plt.savefig(filename, dpi='figure')
     else:
         plt.show()
     plt.close()
-    #return fig,ax
+    # return fig,ax
+
 
 def load(filepath, metric, extent=None, index_names=globals.index_names):
     "returns DataFrame and varmeta"
@@ -266,18 +286,21 @@ def load(filepath, metric, extent=None, index_names=globals.index_names):
         df = _load_data(ds, variables, extent, index_names)
     return df, varmeta
 
+
 def get_var(filepath, metric):
     "Searches the dataset in filepath for variables that contain a certain metric and returns a list of strings."
     with xr.open_dataset(filepath) as ds:
-        variables = _get_var(ds,metric)
+        variables = _get_var(ds, metric)
     return variables
+
 
 def _get_var(ds, metric):
     "Searches the dataset for variables that contain a certain metric and returns a list of strings."
-    if metric == 'n_obs': #n_obs is a special case, that does not match the usual pattern with *_between*
+    if metric == 'n_obs':  # n_obs is a special case, that does not match the usual pattern with *_between*
         return [metric]
     else:
         return [var for var in ds.data_vars if re.search(r'^{}_between'.format(metric), var, re.I)]
+
 
 def load_data(filepath, variables, extent=None, index_names=globals.index_names):
     """
@@ -287,34 +310,39 @@ def load_data(filepath, variables, extent=None, index_names=globals.index_names)
         df = _load_data(ds, variables, extent, index_names)
     return df
 
+
 def _load_data(ds, variables, extent, index_names):
     """
     converts xarray.DataSet to pandas.DataFrame, reading only relevant variables and multiindex
     """
-    if type(variables) is str: variables = [variables] #convert to list of string
+    if type(variables) is str: variables = [variables]  # convert to list of string
     try:
         df = ds[index_names + variables].to_dataframe()
     except KeyError as e:
-        raise Exception('The given variabes '+ ', '.join(variables) + ' do not match the names in the input data.' + str(e))
-    df.dropna(axis='index',subset=variables, inplace=True)
-    if extent: # === geographical subset ===
-        lat,lon = globals.index_names
-        df=df[ (df.lon>=extent[0]) & (df.lon<=extent[1]) & (df.lat>=extent[2]) & (df.lat<=extent[3]) ]
+        raise Exception(
+            'The given variabes ' + ', '.join(variables) + ' do not match the names in the input data.' + str(e))
+    df.dropna(axis='index', subset=variables, inplace=True)
+    if extent:  # === geographical subset ===
+        lat, lon = globals.index_names
+        df = df[(df.lon >= extent[0]) & (df.lon <= extent[1]) & (df.lat >= extent[2]) & (df.lat <= extent[3])]
     return df
 
-def get_meta(filepath,var):
+
+def get_meta(filepath, var):
     """
     parses the var name and gets metadata from tha *.nc dataset.
     checks consistency between the dataset and the variable name.
     """
     with xr.open_dataset(filepath) as ds:
-        return _get_meta(ds,var)
+        return _get_meta(ds, var)
 
-def _get_meta(ds,var):
+
+def _get_meta(ds, var):
     """
     parses the var name and gets metadata from tha *.nc dataset.
     checks consistency between the dataset and the variable name.
     """
+
     def _get_pretty_name(ds, name, number):
         """ 
         Returns pretty_name, version and version_pretty_name.
@@ -323,16 +351,16 @@ def _get_meta(ds,var):
         Then falls back to using name as pretty name.
         """
         try:
-            pretty_name = ds.attrs['val_dc_pretty_name' + str(number-1)]
+            pretty_name = ds.attrs['val_dc_pretty_name' + str(number - 1)]
         except KeyError:
             try:
                 pretty_name = globals._dataset_pretty_names[name]
             except KeyError:
                 pretty_name = name
         try:
-            version = ds.attrs['val_dc_version' + str(number-1)]
+            version = ds.attrs['val_dc_version' + str(number - 1)]
             try:
-                version_pretty_name = ds.attrs['val_dc_version_pretty_name' + str(number-1)]
+                version_pretty_name = ds.attrs['val_dc_version_pretty_name' + str(number - 1)]
             except KeyError:
                 try:
                     version_pretty_name = globals._dataset_version_pretty_names[version]
@@ -349,7 +377,8 @@ def _get_meta(ds,var):
     # === parse var ===
     meta = dict()
     try:
-        pattern = re.compile(r"""(\D+)_between_(\d+)-(\S+)_(\d+)-(?P<dataset>\S+)""") #'ubRMSD_between_4-ISMN_3-ESA_CCI_SM_combined'
+        pattern = re.compile(
+            r"""(\D+)_between_(\d+)-(\S+)_(\d+)-(\S+)""")  # 'ubRMSD_between_4-ISMN_3-ESA_CCI_SM_combined'
         match = pattern.match(var)
         meta['metric'] = match.group(1)
         meta['ref_no'] = int(match.group(2))
@@ -357,58 +386,66 @@ def _get_meta(ds,var):
         meta['ds_no'] = int(match.group(4))
         meta['ds'] = match.group(5)
     except AttributeError:
-        if var == 'n_obs': #catch error occuring when var is 'n_obs'
+        if var == 'n_obs':  # catch error occurring when var is 'n_obs'
             meta['metric'] = 'n_obs'
-            sets = {}
-            i=1
+            datasets = {}
+            i = 1  # numbers as in meta and var. In Attributes, it is numbers-1
             while True:
                 try:
-                    sets[i] = ds.attrs['val_dc_dataset'+str(i-1)]
-                    i+=1
-                except:
+                    datasets[i] = ds.attrs['val_dc_dataset' + str(i - 1)]
+                    i += 1
+                except KeyError:
                     break
-            meta['ref_no'] = list(sets)[-1]
-            meta['ref'] = sets[meta['ref_no']]
-            meta['ds_no'] = list(sets)[:-1] #list instead of int
-            meta['ds'] = [sets[i] for i in meta['ds_no']] #list instead of str
+            try:
+                meta['ref_no'] = int(ds.attrs['val_ref'][-1])  # last character of string is reference number
+                meta['ref'] = ds.attrs[ds.attrs['val_ref']]  # e.g. val_ref = "val_dc_dataset3"
+            except KeyError:  # for some reason, the attribute lookup failed. Fall back to the last element in dict
+                meta['ref_no'] = list(datasets)[-1]
+                meta['ref'] = datasets[meta['ref_no']]
+            datasets.pop(meta['ref_no'])
+            meta['ds_no'] = list(datasets.keys())  # list instead of int
+            meta['ds'] = [datasets[i] for i in meta['ds_no']]  # list instead of str
         else:
             raise Exception('The given var \'{}\' does not match the regex pattern.'.format(var))
     # === get pretty names ===
-    for i in ('ds','ref'):
+    for i in ('ds', 'ref'):
         name = meta[i]
-        number = meta[i+'_no']
-        if (type(name)==list) and (type(number)==list): # e.g. ds of n_obs are several: the rest needs to be list as well
-            meta[i+'_pretty_name'] = list()
-            meta[i+'_version'] = list()
-            meta[i+'_version_pretty_name'] = list()
-            for na, no in zip(name,number):
-                pretty_name,version,version_pretty_name = _get_pretty_name(ds,na,no)
-                meta[i+'_pretty_name'].append(pretty_name)
-                meta[i+'_version'].append(version)
-                meta[i+'_version_pretty_name'].append(version_pretty_name)
-        else: #usual case.
-            pretty_name,version,version_pretty_name = _get_pretty_name(ds,name,number)
-            meta[i+'_pretty_name'] = pretty_name
-            meta[i+'_version'] = version
-            meta[i+'_version_pretty_name'] = version_pretty_name
+        number = meta[i + '_no']
+        if (type(name) == list) and (
+                type(number) == list):  # e.g. ds of n_obs are several: the rest needs to be list as well
+            meta[i + '_pretty_name'] = list()
+            meta[i + '_version'] = list()
+            meta[i + '_version_pretty_name'] = list()
+            for na, no in zip(name, number):
+                pretty_name, version, version_pretty_name = _get_pretty_name(ds, na, no)
+                meta[i + '_pretty_name'].append(pretty_name)
+                meta[i + '_version'].append(version)
+                meta[i + '_version_pretty_name'].append(version_pretty_name)
+        else:  # usual case.
+            pretty_name, version, version_pretty_name = _get_pretty_name(ds, name, number)
+            meta[i + '_pretty_name'] = pretty_name
+            meta[i + '_version'] = version
+            meta[i + '_version_pretty_name'] = version_pretty_name
     return meta
+
 
 def get_varmeta(filepath, variables=None):
     """
     get meta for all variables and return a nested dict.
     """
     with xr.open_dataset(filepath) as ds:
-        return _get_varmeta(ds,variables)
+        return _get_varmeta(ds, variables)
 
-def _get_varmeta(ds,variables=None):
+
+def _get_varmeta(ds, variables=None):
     """
     get meta for all variables and return a nested dict.
     """
-    if not variables: #take all variables.
-        variables=list(ds.data_vars)
-        for index in (*globals.index_names, 'gpi'): #remove lat, lon, gpi
+    if not variables:  # take all variables.
+        variables = list(ds.data_vars)
+        for index in (*globals.index_names, 'gpi'):  # remove lat, lon, gpi
             try:
                 variables.remove(index)
             except ValueError:
                 warnings.warn('{} is not in variables.'.format(index))
-    return {var:_get_meta(ds,var) for var in variables}
+    return {var: _get_meta(ds, var) for var in variables}
