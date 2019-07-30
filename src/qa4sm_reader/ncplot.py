@@ -157,8 +157,6 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         variables = get_var(filepath, metric)
     else:
         variables = metric  # metric already contais the variables to be plotted.
-    if out_dir is None:
-        out_dir = os.path.join(os.getcwd())
 
     # === Get ready... ===
     with xr.open_dataset(filepath) as ds:
@@ -171,6 +169,8 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
     fig, ax = dfplot.boxplot(df=df, varmeta=varmeta, **plot_kwargs)
 
     # === save figure ===
+    if out_dir is None:
+        out_dir = os.path.join(os.getcwd())
     if out_type:
         if not out_dir: out_dir = os.path.dirname(__file__)
         if not os.path.exists(out_dir):
@@ -185,8 +185,8 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         return
     elif out_name:
         if out_name.find(
-                '.') == -1:  # append '.png'out_name contains no '.', which is hopefully followed by a meaningful file ending.
-            out_name += '.png'
+                '.') == -1:  # out_name contains no '.', which is hopefully followed by a meaningful file ending.
+            out_name += '.png'  # append '.png'
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
         filename = os.path.join(out_dir, out_name)
@@ -304,7 +304,21 @@ def _get_var(ds, metric):
 
 def load_data(filepath, variables, extent=None, index_names=globals.index_names):
     """
-    converts xarray.DataSet to pandas.DataFrame, reading only relevant variables and multiindex
+    Loads requested Data from the NetCDF file.
+
+    Parameters
+    ----------
+    filepath : str
+    variables
+    extent : list
+        [lon_min,lon_max,lat_min,lat_max] to create a subset of the data
+    index_names : list [optional]
+        defaults to globals.index_names = ['lat', 'lon']
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        DataFrame containing the requested data.
     """
     with xr.open_dataset(filepath) as ds:
         df = _load_data(ds, variables, extent, index_names)
@@ -324,7 +338,8 @@ def _load_data(ds, variables, extent, index_names):
     df.dropna(axis='index', subset=variables, inplace=True)
     if extent:  # === geographical subset ===
         lat, lon = globals.index_names
-        df = df[(df.lon >= extent[0]) & (df.lon <= extent[1]) & (df.lat >= extent[2]) & (df.lat <= extent[3])]
+        df = df[(df[lon] >= extent[0]) & (df[lon] <= extent[1]) & (df[lat] >= extent[2]) & (df[lat] <= extent[3])]
+    df.reset_index(drop=True, inplace=True)
     return df
 
 
@@ -449,3 +464,49 @@ def _get_varmeta(ds, variables=None):
             except ValueError:
                 warnings.warn('{} is not in variables.'.format(index))
     return {var: _get_meta(ds, var) for var in variables}
+
+
+def _get_dir_name_type(out_dir, out_name, out_ext):
+    """
+    Standardized behaviour for filenames.
+
+    Parameters
+    ----------
+    out_name : str
+        output filename.
+        if it contains an extension (e.g. 'MyName.png'), the extension is added to out_ext.
+    out_dir : [ str | None ]
+        path to the output directory.
+        if None, uses the current working directory.
+    out_ext : [ str | iterable ]
+        contains file extensions to be plotted.
+        if None, '.png' is used. If '.' is missing, it is added.
+
+    Returns
+    -------
+    out_dir : str
+    out_name : str
+    out_ext : set
+        file extensions
+
+    """
+    # directory
+    if not out_dir:
+        out_dir=os.getcwd()
+    # file name
+    (out_name, ext) = os.path.splitext(out_name)  # remove extension
+    # file type
+    if not out_ext:
+        if ext:
+            out_ext = ext
+        else:
+            out_ext = '.png'
+    # convert to a set
+    if isinstance(out_ext,str):
+        out_ext = {out_ext}
+    else:
+        out_ext = set(out_ext)
+    if ext:
+        out_ext.add(ext)
+    out_ext = {ext if ext[0] == "." else "." + ext for ext in out_ext}  # make sure all entries start with a '.'
+    return out_dir, out_name, out_ext

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from pkg_resources import get_distribution, DistributionNotFound
-import qa4sm_reader.ncplot
+from qa4sm_reader import ncplot
 
 __all__ = ['ncplot']
 
