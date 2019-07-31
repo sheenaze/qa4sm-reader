@@ -49,15 +49,16 @@ MANIFEST
 # Per-project virtualenvs
 .venv*/
 
-#spyder project files
+# spyder project files
 .spyproject/
 
-#test data, test results
-tests/test_data
+# test data, test results
+# tests/test_data
+tests/test_data/old
 tests/test_results
 
-#personal testing stuff
+# personal testing stuff
 test.py
 
-#exclude cartopy cache
+# exclude cartopy cache
 src/qa4sm_reader/cartopy/
