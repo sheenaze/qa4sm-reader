@@ -13,4 +13,5 @@ dependencies:
 - colorcet
 - pip
 - python=3
+- pytest-runner>=2.0,<3dev
 - pip:

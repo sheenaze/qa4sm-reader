@@ -133,12 +133,12 @@ def test_load():
     assert_frame_equal(df, exp_df)
 
 
-# def test_boxplot():
-#     filepath = get_path('ISMN')
-#     out_dir = get_path('boxplot')
-#     ncplot.boxplot(filepath, 'R', out_dir=out_dir, out_type='png')
-#
-#
+def test_boxplot():
+    filepath = get_path('ISMN')
+    out_dir = get_path('boxplot')
+    ncplot.boxplot(filepath, 'R', out_dir=out_dir, out_type='png')
+
+
 # def test_boxplot2():  # demonstrate some more functionality
 #     filepath = get_path('GLDAS')
 #     out_dir = get_path('boxplot')
