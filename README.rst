@@ -48,7 +48,7 @@ For testing, we use ``py.test``:
 
 .. code::
 
-    python setup.py test
+    python setup.py pytest
 
 
 The dependencies are automatically installed by `pytest-runner`_ when you run the tests. The test-dependencies are listed in the ``testing`` field inside the ``[options.extras_require]`` section of ``setup.cfg``.
