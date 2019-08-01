@@ -295,7 +295,7 @@ def mapplot(df, var, meta, title=None, label=None, plot_extent=None,
 
     # === coordiniate range ===
     if not plot_extent:
-        plot_extent = get_plot_extent(df)
+        plot_extent = get_plot_extent(df, grid=True)
 
     # === init plot ===
     fig, ax, cax = init_plot(figsize, dpi, add_cbar)
@@ -325,8 +325,27 @@ def mapplot(df, var, meta, title=None, label=None, plot_extent=None,
     # === watermark ===
     if watermark_pos: make_watermark(fig,
                                      watermark_pos)  # tight_layout does not take into account annotations, so make_watermark needs to be called after.
-
     return fig, ax
+
+
+def _get_grid(a):
+    "Find the stepsize of the grid behind a and return the parameters for that grid axis."
+
+    def _float_gcd(a, b, atol=1e-08):
+        "Greatest common divisor (=groesster gemeinsamer teiler)"
+        while abs(b) > atol:
+            a, b = b, a % b
+        return a
+
+    a = np.unique(a)  # get unique values and sort
+    das = np.unique(np.diff(a))  # get unique stepsizes and sort
+    da = das[0]  # get smallest stepsize
+    for d in das[1:]:  # make sure, all stepsizes are multiple of da
+        da = _float_gcd(d, da)
+    a_min = a[0]
+    a_max = a[-1]
+    len_a = int((a_max - a_min) / da + 1)
+    return a_min, a_max, da, len_a
 
 
 def geotraj_to_geo2d(df, var, index=globals.index_names):
@@ -357,29 +376,7 @@ def geotraj_to_geo2d(df, var, index=globals.index_names):
 
     """
 
-    def _float_gcd(a, b, atol=1e-08):
-        "Greatest common divisor (=groesster gemeinsamer teiler)"
-        while abs(b) > atol:
-            a, b = b, a % b
-        return a
-
-    def _get_even(a):
-        "Find the stepsize of the grid behind a and return the parameters for that grid axis."
-        a = np.unique(a)  # get unique values
-        das = np.unique(np.diff(a))  # get unique stepsizes
-        da = das[0]  # get smallest stepsize
-        for d in das[1:]:  # make sure, all stepsizes are multiple of da
-            da = _float_gcd(d, da)
-        a_min = a[0]
-        a_max = a[-1]
-        len_a = int((a_max - a_min) / da + 1)
-        return a_min, a_max, da, len_a  # np.arange(a_min, a_max+da, da)
-
-    def _index(a, a_min, da):
-        "Return the index corresponding to a"
-        return int((a - a_min) / da)
-
-    def _index2(a, a_min, da):
+    def _value2index(a, a_min, da):
         "Return the indexes corresponding to a. a and the returned index is a numpy array."
         return ((a - a_min) / da).astype('int')
 
@@ -387,11 +384,11 @@ def geotraj_to_geo2d(df, var, index=globals.index_names):
     yy = df[index[0]]  # lat
     data = df[var]
 
-    x_min, x_max, dx, len_x = _get_even(xx)
-    y_min, y_max, dy, len_y = _get_even(yy)
+    x_min, x_max, dx, len_x = _get_grid(xx)
+    y_min, y_max, dy, len_y = _get_grid(yy)
 
-    ii = _index2(yy, y_min, dy)
-    jj = _index2(xx, x_min, dx)
+    ii = _value2index(yy, y_min, dy)
+    jj = _value2index(xx, x_min, dx)
 
     zz = np.full((len_y, len_x), np.nan, dtype=np.float64)
     zz[ii, jj] = data
@@ -488,7 +485,7 @@ def get_quantiles(ds, quantiles):
         raise TypeError("Inappropriate argument type. 'ds' must be pandas.Series or pandas.DataFrame.")
 
 
-def get_plot_extent(df):
+def get_plot_extent(df, grid=False):
     """
     Gets the plot_extent from the data. Uses range of data and 
     adds a padding fraction as specified in globals.map_pad
@@ -505,10 +502,13 @@ def get_plot_extent(df):
     
     """
     lat, lon = globals.index_names
-    extent = [df[lon].min(),
-              df[lon].max(),
-              df[lat].min(),
-              df[lat].max()]
+    if grid:
+        x_min, x_max, dx, len_x = _get_grid(df[lon])
+        y_min, y_max, dy, len_y = _get_grid(df[lat])
+        extent = [x_min-dx/2., x_max+dx/2., y_min-dx/2., y_max+dx/2.]
+    else:
+        extent = [df[lon].min(), df[lon].max(),
+                  df[lat].min(), df[lat].max()]
     dx = extent[1] - extent[0]
     dy = extent[3] - extent[2]
     # set map-padding around data to be globals.map_pad percent of the smaller dimension
