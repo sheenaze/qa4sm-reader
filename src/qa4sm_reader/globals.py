@@ -143,7 +143,7 @@ matplotlib_ppi = 72
 index_names = ['lat', 'lon']
 dpi = 100
 max_title_len = 50  # maximum length of plot title in chars. if longer, it will be broken in multiple lines.
-title_pad = 12.0  # default padding is matplotlib.rcParams['axes.titlepad'] = 6.0
+title_pad = 12.0  # in points. default padding is matplotlib.rcParams['axes.titlepad'] = 6.0
 data_crs = ccrs.PlateCarree()
 
 # === map plot defaults ===

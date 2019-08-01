@@ -168,7 +168,7 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         If None, no file is saved.
         The default is png.
     **plot_kwargs : dict, optional
-        Additional keyword arguments that are passed to dfplot.
+        Additional keyword arguments that are passed to dfplot.boxplot.
 
     Returns
     -------

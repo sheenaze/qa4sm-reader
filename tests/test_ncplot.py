@@ -179,7 +179,7 @@ def test_boxplot_GLDAS_options():
     variables = ncplot.get_var(filepath, 'R')[:-1]
     ncplot.boxplot(filepath, variables, out_dir=out_dir, out_name=out_name,
                    watermark_pos=None, out_type=['png', '.svg'], dpi=300,
-                   printnumbers=False, add_title=False)
+                   print_stat=False, add_title=False)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
 
 
