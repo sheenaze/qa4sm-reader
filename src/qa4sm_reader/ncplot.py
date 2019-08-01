@@ -1,11 +1,36 @@
 # -*- coding: utf-8 -*-
 
+
+__author__ = "Lukas Racbhauer"
+__copyright__ = "Lukas Racbhauer"
+__license__ = "mit"
+
+
 """
 Contains an interface for opening QA4SM output files (*.nc), 
 loading certain parts as pandas.DataFrame 
 and producing plots using the dfplot module in this package.
+
+naming convention:
+------------------
+filepath : str
+    Path to the *.nc file to be processed.
+metric : str
+    metric to be plotted.
+metrics : list
+    list of [metric]
+var : str
+    variable to be plotted.
+variables : list
+    list of [var]
+meta : dict
+    dictionary containing metadata for one var
+varmeta : dict
+    dictionary containing {var : meta}
+    
 Internally, xarray is used to open the NetCDF files.
 """
+
 
 from qa4sm_reader import dfplot
 from qa4sm_reader import globals
@@ -176,7 +201,7 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
         if not out_name: out_name = 'boxplot_' + '__'.join(
-            [var for var in variables])  # TODO: write a function that produces meaningful names.
+            [var for var in variables])  # TODO: write a function that produces meaningful names. And returns filename.
         filename = os.path.join(out_dir, out_name)
         if type(out_type) is not list: out_type = [out_type]
         for ending in out_type:
