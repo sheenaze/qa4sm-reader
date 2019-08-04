@@ -7,6 +7,36 @@ and producing plots using the dfplot module in this package.
 Internally, xarray is used to open the NetCDF files.
 """
 
+"""
+Copyright (c) 2019, TU Wien, Department of Geodesy and Geoinformation
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of TU Wien Department of Geodesy and Geoinformation nor
+  the names of its contributors may be used to endorse or promote products
+  derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+
 from qa4sm_reader import dfplot
 from qa4sm_reader import globals
 import xarray as xr
@@ -15,11 +45,6 @@ import re
 import os
 
 import warnings
-
-__author__ = "Lukas Racbhauer"
-__copyright__ = "Lukas Racbhauer"
-__license__ = "mit"
-
 
 # === File level ===
 
@@ -58,6 +83,7 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
     metric : str of list of str
         metric to be plotted.
         alternatively a list of variables can be given.
+        # todo: if None is passed iterate over all variables in the file and plot them
     extent : list
         [x_min,x_max,y_min,y_max] to create a subset of the data
     out_dir : [ None | str ], optional
@@ -115,7 +141,8 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
                     plt.close()
 
 
-def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type=None, **plot_kwargs):
+def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type=None,
+            **plot_kwargs):
     """
     Creates a boxplot, displaying the variables corresponding to given metric.
     Saves a figure and returns Matplotlib fig and ax objects for further processing.
@@ -197,7 +224,8 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         return fig, ax
 
 
-def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=None, **plot_kwargs):
+def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=None,
+            **plot_kwargs):
     """
     Plots data to a map, using the data as color. Plots a scatterplot for ISMN and a image plot for other input data.
     Saves a figure and returns Matplotlib fig and ax objects for further processing.
