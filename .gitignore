@@ -62,3 +62,6 @@ test.py
 
 # exclude cartopy cache
 src/qa4sm_reader/cartopy/
+
+# exclude result maps from usecase script
+tests/test_data/out/*

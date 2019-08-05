@@ -2,7 +2,7 @@
 
 
 __author__ = "Lukas Racbhauer"
-__copyright__ = "Lukas Racbhauer"
+__copyright__ = "2019, TU Wien, Department of Geodesy and Geoinformation"
 __license__ = "mit"
 
 
@@ -31,7 +31,6 @@ varmeta : dict
 Internally, xarray is used to open the NetCDF files.
 """
 
-
 from qa4sm_reader import dfplot
 from qa4sm_reader import globals
 import xarray as xr
@@ -40,11 +39,6 @@ import re
 import os
 
 import warnings
-
-__author__ = "Lukas Racbhauer"
-__copyright__ = "Lukas Racbhauer"
-__license__ = "mit"
-
 
 # === File level ===
 
@@ -83,6 +77,7 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
     metric : str of list of str
         metric to be plotted.
         alternatively a list of variables can be given.
+        # todo: if None is passed iterate over all variables in the file and plot them
     extent : list
         [x_min,x_max,y_min,y_max] to create a subset of the data
     out_dir : [ None | str ], optional
@@ -140,7 +135,8 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
                     plt.close()
 
 
-def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type=None, **plot_kwargs):
+def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type=None,
+            **plot_kwargs):
     """
     Creates a boxplot, displaying the variables corresponding to given metric.
     Saves a figure and returns Matplotlib fig and ax objects for further processing.
@@ -222,7 +218,8 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         plt.close()  # return fig, ax
 
 
-def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=None, **plot_kwargs):
+def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=None,
+            **plot_kwargs):
     """
     Plots data to a map, using the data as color. Plots a scatterplot for ISMN and a image plot for other input data.
     Saves a figure and returns Matplotlib fig and ax objects for further processing.
