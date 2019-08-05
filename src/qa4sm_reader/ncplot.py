@@ -46,23 +46,12 @@ def get_metrics(filepath):
     "Returns a list of metrics available in the current filepath"
     with xr.open_dataset(filepath) as ds:
         metrics = _get_metrics(ds)
-        try:
-            metrics.remove(
-                'tau')  # TODO: deal with tau: contains only nan, thus axes limits are nan and matplotlib throws an error.
-            metrics.remove('p_tau')  # line 115, in boxplot
-            # ax.set_ylim(get_value_range(df, metric))
-            # ValueError: Axis limits cannot be NaN or
-        except:
-            pass
     return metrics
 
 
 def _get_metrics(ds):
     varmeta = _get_varmeta(ds)
-    metrics = list()
-    for var in varmeta:
-        if varmeta[var]['metric'] not in metrics: metrics.append(varmeta[var]['metric'])
-    return metrics
+    return {varmeta[meta]['metric'] for meta in varmeta}
 
 
 def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', boxplot_kwargs=dict(),
@@ -101,13 +90,13 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
     metrics = get_metrics(filepath)
 
     for metric in metrics:
-        # === load data and metadata ===
-        df, varmeta = load(filepath, metric, extent)
-
         # === make directory ===
         curr_dir = os.path.join(out_dir, metric)
         if not os.path.exists(curr_dir):
             os.makedirs(curr_dir)
+
+        # === load data and metadata ===
+        df, varmeta = load(filepath, metric, extent)
 
         # === boxplot ===
         fig, ax = dfplot.boxplot(df, varmeta, **boxplot_kwargs)
@@ -311,19 +300,39 @@ def load(filepath, metric, extent=None, index_names=globals.index_names):
     return df, varmeta
 
 
-def get_var(filepath, metric):
-    "Searches the dataset in filepath for variables that contain a certain metric and returns a list of strings."
+def get_var(filepath, metric=None):
+    """
+    Searches the dataset for variables that contain a 'metric_between' and returns a list of strings.
+    Drops vars that contain only nan or null values.
+
+    Parameters
+    ----------
+    filepath : str
+    metric : str
+
+    Returns
+    -------
+    vars : list
+    """
     with xr.open_dataset(filepath) as ds:
         variables = _get_var(ds, metric)
     return variables
 
 
 def _get_var(ds, metric):
-    "Searches the dataset for variables that contain a certain metric and returns a list of strings."
+    """"
+    Searches the dataset for variables that contain a '<metric>_between' and returns a list of strings.
+    Drop vars that contain only nan or null values.
+    """
+    # TODO: change to set instead of list
     if metric == 'n_obs':  # n_obs is a special case, that does not match the usual pattern with *_between*
         return [metric]
     else:
-        return [var for var in ds.data_vars if re.search(r'^{}_between'.format(metric), var, re.I)]
+        variables = [var for var in ds if ~ds[var].isnull().all()]  # reject all nan and null values.
+        if metric:  # usual case.
+            return [var for var in variables if re.search(r'^{}_between'.format(metric), var, re.I)]  # search for pattern.
+        else:  # metric is None, return all variables that contain '_between'
+            return [var for var in variables if (re.search(r'_between', var, re.I) or var == 'n_obs')]  # search for pattern.
 
 
 def load_data(filepath, variables, extent=None, index_names=globals.index_names):
@@ -480,13 +489,8 @@ def _get_varmeta(ds, variables=None):
     """
     get meta for all variables and return a nested dict.
     """
-    if not variables:  # take all variables.
-        variables = list(ds.data_vars)
-        for index in (*globals.index_names, 'gpi'):  # remove lat, lon, gpi
-            try:
-                variables.remove(index)
-            except ValueError:
-                warnings.warn('{} is not in variables.'.format(index))
+    if not variables:  # get all variables.
+        variables = _get_var(ds, metric=None)
     return {var: _get_meta(ds, var) for var in variables}
 
 
