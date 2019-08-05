@@ -81,30 +81,31 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
     **plot_kwargs : dict, optional
         Additional keyword arguments that are passed to dfplot.
     """
-    if type(out_type) is not list:
-        out_type = [out_type]
-    if out_dir is None:
+    if not out_dir:
         out_dir = os.path.join(os.getcwd(), os.path.basename(filepath))
 
     # === Metadata ===
     metrics = get_metrics(filepath)
 
     for metric in metrics:
-        # === make directory ===
-        curr_dir = os.path.join(out_dir, metric)
-        if not os.path.exists(curr_dir):
-            os.makedirs(curr_dir)
-
         # === load data and metadata ===
         df, varmeta = load(filepath, metric, extent)
 
         # === boxplot ===
         fig, ax = dfplot.boxplot(df, varmeta, **boxplot_kwargs)
+
         # === save ===
-        out_name = 'boxplot_' + '__'.join(
-            [var for var in varmeta])  # TODO: write a function that produces meaningful names.
+        curr_dir = os.path.join(out_dir, metric)
+        try:
+            out_name = 'boxplot_{}_{}-'.format(metric, [*varmeta.values()][0]['ref']) + '-'.join(
+                [varmeta[var]['ds'] for var in varmeta])
+        except TypeError:
+            out_name = 'boxplot_n_obs'
+        curr_dir, out_name, out_type = _get_dir_name_type(curr_dir, out_name, out_type)
+        if not os.path.exists(curr_dir):
+            os.makedirs(curr_dir)
         for ending in out_type:
-            fname = os.path.join(curr_dir, '{}.{}'.format(out_name, ending))
+            fname = os.path.join(curr_dir, out_name+ending)
             plt.savefig(fname, dpi='figure')
             plt.close()
 
@@ -119,7 +120,7 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
             out_name = 'mapplot_' + var
             for ending in out_type:
                 if out_type:  # don't attempt to save if None.
-                    fname = os.path.join(curr_dir, '{}.{}'.format(out_name, ending))
+                    fname = os.path.join(curr_dir, out_name+ending)
                     plt.savefig(fname, dpi='figure')
                     plt.close()
 
@@ -163,48 +164,23 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         Axes or list of axes containing the plot.
 
     """
-    if type(metric) is str:
-        variables = get_var(filepath, metric)
-    else:
-        variables = metric  # metric already contais the variables to be plotted.
-
-    # === Get ready... ===
-    with xr.open_dataset(filepath) as ds:
-        # === Get Metadata ===
-        varmeta = _get_varmeta(ds, variables)
-        # === Load data ===
-        df = _load_data(ds, variables, extent, globals.index_names)
+    # === load data and metadata ===
+    df, varmeta = load(filepath, metric, extent)
 
     # === plot data ===
     fig, ax = dfplot.boxplot(df=df, varmeta=varmeta, **plot_kwargs)
 
-    # === save figure ===
-    if out_dir is None:
-        out_dir = os.path.join(os.getcwd())
-    if out_type:
-        if not out_dir: out_dir = os.path.dirname(__file__)
-        if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
-        if not out_name: out_name = 'boxplot_' + '__'.join(
-            [var for var in variables])  # TODO: write a function that produces meaningful names. And returns filename.
-        filename = os.path.join(out_dir, out_name)
-        if type(out_type) is not list: out_type = [out_type]
-        for ending in out_type:
-            plt.savefig('{}.{}'.format(filename, ending), dpi='figure')
-        plt.close()
-        return
-    elif out_name:
-        if out_name.find(
-                '.') == -1:  # out_name contains no '.', which is hopefully followed by a meaningful file ending.
-            out_name += '.png'  # append '.png'
-        if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
-        filename = os.path.join(out_dir, out_name)
-        plt.savefig(filename)
-        plt.close()
-        return
-    else:
-        plt.close()  # return fig, ax
+    # === save ===
+    if not out_name:
+        out_name = 'boxplot_{}_{}-'.format([*varmeta.values()][0]['metric'], [*varmeta.values()][0]['ref']) + '-'.join(
+            [varmeta[var]['ds'] for var in varmeta])
+    out_dir, out_name, out_type = _get_dir_name_type(out_dir, out_name, out_type)
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    for ending in out_type:
+        fname = os.path.join(out_dir, out_name+ending)
+        plt.savefig(fname, dpi='figure')
+    plt.close()
 
 
 def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=None,
@@ -217,7 +193,7 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
     ----------
     filepath : str
         Path to the *.nc file to be processed.
-    var : str
+    var : [ str | list ]
         variable to be plotted.
     extent : list
         [x_min,x_max,y_min,y_max] to create a subset of the data
@@ -245,56 +221,37 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
         Axes or list of axes containing the plot.
 
     """
-    if out_dir is None:
-        out_dir = os.path.join(os.getcwd())
-    # TODO: do something when var is not a string but a list. (e.g. call list plot function)
-    if type(var) == list:
-        var = var[0]
+    if isinstance(var, str):
+        variables = [var]  # raise IOError('var needs to be a string, not {}.'.format(type(var)))
+
     # === Get ready... ===
-    with xr.open_dataset(filepath) as ds:
-        # === Get Metadata ===
-        meta = _get_meta(ds, var)
-        # === Load data ===
-        df = _load_data(ds, var, extent, globals.index_names)
+    df, varmeta = load(filepath, variables, extent)
 
-    # === plot data ===
-    if (meta['ds'] in globals.scattered_datasets or meta['ref'] in globals.scattered_datasets):  # do scatterplot
-        fig, ax = dfplot.scatterplot(df=df, var=var, meta=meta, **plot_kwargs)
-    else:
-        fig, ax = dfplot.mapplot(df=df, var=var, meta=meta, **plot_kwargs)
+    for var in varmeta:  # plot all specified variables (usually only one)
+        # === plot data ===
+        if varmeta[var]['ds'] in globals.scattered_datasets or varmeta[var]['ref'] in globals.scattered_datasets:  # do scatterplot
+            fig, ax = dfplot.scatterplot(df=df, var=var, meta=varmeta[var], **plot_kwargs)
+        else:
+            fig, ax = dfplot.mapplot(df=df, var=var, meta=varmeta[var], **plot_kwargs)
 
-    # == save figure ===
-    if out_type:
-        if not out_dir:
-            out_dir = os.path.dirname(__file__)
+        # === save ===
+        out_name = 'mapplot_' + var
+        out_dir, out_name, out_type = _get_dir_name_type(out_dir, out_name, out_type)
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
-        if not out_name:
-            out_name = 'mapplot_' + var
-        filename = os.path.join(out_dir, out_name)
-        if type(out_type) is not list: out_type = [out_type]
         for ending in out_type:
-            plt.savefig('{}.{}'.format(filename, ending), dpi='figure')
+            fname = os.path.join(out_dir, out_name+ending)
+            plt.savefig(fname, dpi='figure')
         plt.close()
-    elif out_name:
-        if out_name.find(
-                '.') == -1:  # append '.png'out_name contains no '.', which is hopefully followed by a meaningful file ending.
-            out_name += '.png'
-        if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
-        filename = os.path.join(out_dir, out_name)
-        plt.savefig(filename, dpi='figure')
-        plt.close()
-    else:
-        plt.close()  # return fig, ax  # plt.show()
-
-
 
 
 def load(filepath, metric, extent=None, index_names=globals.index_names):
-    "returns DataFrame and varmeta"
+    "returns DataFrame and varmeta"  # TODO: docstring!
     with xr.open_dataset(filepath) as ds:
-        variables = _get_var(ds, metric)
+        if isinstance(metric, str):
+            variables = _get_var(ds, metric)
+        elif isinstance(metric, list) or isinstance(metric, set):  # metric is a list and already contais the variables to be plotted.
+            variables = metric
         varmeta = _get_varmeta(ds, variables)
         df = _load_data(ds, variables, extent, index_names)
     return df, varmeta
@@ -385,40 +342,40 @@ def get_meta(filepath, var):
         return _get_meta(ds, var)
 
 
+def _get_pretty_name(ds, name, number):
+    """
+    Returns pretty_name, version and version_pretty_name.
+    First tries to find info from ds.attrs.
+    Then falls back to globals.
+    Then falls back to using name as pretty name.
+    """
+    try:
+        pretty_name = ds.attrs['val_dc_pretty_name' + str(number - 1)]
+    except KeyError:
+        try:
+            pretty_name = globals._dataset_pretty_names[name]
+        except KeyError:
+            pretty_name = name
+    try:
+        version = ds.attrs['val_dc_version' + str(number - 1)]
+        try:
+            version_pretty_name = ds.attrs['val_dc_version_pretty_name' + str(number - 1)]
+        except KeyError:
+            try:
+                version_pretty_name = globals._dataset_version_pretty_names[version]
+            except KeyError:
+                version_pretty_name = version
+    except KeyError:
+        version = 'unknown'
+        version_pretty_name = 'unknown version'
+    return pretty_name, version, version_pretty_name
+
+
 def _get_meta(ds, var):
     """
     parses the var name and gets metadata from tha *.nc dataset.
     checks consistency between the dataset and the variable name.
     """
-
-    def _get_pretty_name(ds, name, number):
-        """ 
-        Returns pretty_name, version and version_pretty_name.
-        First tries to find info from ds.attrs.
-        Then falls back to globals.
-        Then falls back to using name as pretty name.
-        """
-        try:
-            pretty_name = ds.attrs['val_dc_pretty_name' + str(number - 1)]
-        except KeyError:
-            try:
-                pretty_name = globals._dataset_pretty_names[name]
-            except KeyError:
-                pretty_name = name
-        try:
-            version = ds.attrs['val_dc_version' + str(number - 1)]
-            try:
-                version_pretty_name = ds.attrs['val_dc_version_pretty_name' + str(number - 1)]
-            except KeyError:
-                try:
-                    version_pretty_name = globals._dataset_version_pretty_names[version]
-                except KeyError:
-                    version_pretty_name = version
-        except KeyError:
-            version = 'unknown'
-            version_pretty_name = 'unknown version'
-        return pretty_name, version, version_pretty_name
-
     # === consistency with dataset ===
     if not var in ds.data_vars:
         raise Exception('The given var \'{}\' is not contained in the dataset.'.format(var))
@@ -494,19 +451,19 @@ def _get_varmeta(ds, variables=None):
     return {var: _get_meta(ds, var) for var in variables}
 
 
-def _get_dir_name_type(out_dir, out_name, out_ext):
+def _get_dir_name_type(out_dir, out_name, out_type):
     """
     Standardized behaviour for filenames.
 
     Parameters
     ----------
-    out_name : str
-        output filename.
-        if it contains an extension (e.g. 'MyName.png'), the extension is added to out_ext.
     out_dir : [ str | None ]
         path to the output directory.
         if None, uses the current working directory.
-    out_ext : [ str | iterable ]
+    out_name : str
+        output filename.
+        if it contains an extension (e.g. 'MyName.png'), the extension is added to out_ext.
+    out_type : [ str | iterable | None ]
         contains file extensions to be plotted.
         if None, '.png' is used. If '.' is missing, it is added.
 
@@ -520,21 +477,22 @@ def _get_dir_name_type(out_dir, out_name, out_ext):
     """
     # directory
     if not out_dir:
-        out_dir=os.getcwd()
+        out_dir = ''
+    out_dir = os.path.abspath(out_dir)
     # file name
     (out_name, ext) = os.path.splitext(out_name)  # remove extension
     # file type
-    if not out_ext:
+    if not out_type:
         if ext:
-            out_ext = ext
+            out_type = ext
         else:
-            out_ext = '.png'
+            out_type = '.png'
     # convert to a set
-    if isinstance(out_ext,str):
-        out_ext = {out_ext}
-    else:
-        out_ext = set(out_ext)
+    if isinstance(out_type, str):
+        out_type = {out_type}
+    else:  # some iterable
+        out_type = set(out_type)
     if ext:
-        out_ext.add(ext)
-    out_ext = {ext if ext[0] == "." else "." + ext for ext in out_ext}  # make sure all entries start with a '.'
-    return out_dir, out_name, out_ext
+        out_type.add(ext)
+    out_type = {ext if ext[0] == "." else "." + ext for ext in out_type}  # make sure all entries start with a '.'
+    return out_dir, out_name, out_type

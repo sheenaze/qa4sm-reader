@@ -167,7 +167,7 @@ def test_boxplot_ISMN_default():
 
 def test_boxplot_ISMN_nan_default():
     filepath = get_path('ISMN_nan')
-    ncplot.boxplot(filepath, 'rho')
+    ncplot.boxplot(filepath, 'rho', figsize=[9, 4.68])
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))  # TODO: print full filename
 
 
@@ -179,7 +179,7 @@ def test_boxplot_GLDAS_default():
 
 def test_boxplot_GLDAS_nan_default():
     filepath = get_path('GLDAS_nan')
-    ncplot.boxplot(filepath, 'rho')
+    ncplot.boxplot(filepath, 'rho', figsize=[9, 4.68])
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
 
 
@@ -207,7 +207,7 @@ def test_boxplot_GLDAS_nan_extent():
     filepath = get_path('GLDAS_nan')
     out_dir = get_path('boxplot')
     out_name = 'test_boxplot_GLDAS_nan_extent'
-    ncplot.boxplot(filepath, 'R', EXTENT_GRID, out_dir, out_name)
+    ncplot.boxplot(filepath, 'R', EXTENT_GRID, out_dir, out_name, figsize=[9, 4.68])
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
 
 
