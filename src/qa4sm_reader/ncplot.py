@@ -126,8 +126,8 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
 
         # === mapplot ===
         for var in varmeta:
-            if (varmeta[var]['ds'] in globals.scattered_datasets or varmeta[var][
-                'ref'] in globals.scattered_datasets):  # do scatterplot
+            if (varmeta[var]['ds'] in globals.scattered_datasets or
+                    varmeta[var]['ref'] in globals.scattered_datasets):  # do scatterplot
                 fig, ax = dfplot.scatterplot(df, var=var, meta=varmeta[var], **mapplot_kwargs)
             else:
                 fig, ax = dfplot.mapplot(df, var=var, meta=varmeta[var], **mapplot_kwargs)
@@ -219,7 +219,7 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         plt.close()
         return
     else:
-        return fig, ax
+        plt.close()  # return fig, ax
 
 
 def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=None, **plot_kwargs):
@@ -289,6 +289,7 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
         if type(out_type) is not list: out_type = [out_type]
         for ending in out_type:
             plt.savefig('{}.{}'.format(filename, ending), dpi='figure')
+        plt.close()
     elif out_name:
         if out_name.find(
                 '.') == -1:  # append '.png'out_name contains no '.', which is hopefully followed by a meaningful file ending.
@@ -297,10 +298,11 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
             os.makedirs(out_dir)
         filename = os.path.join(out_dir, out_name)
         plt.savefig(filename, dpi='figure')
+        plt.close()
     else:
-        plt.show()
-    plt.close()
-    # return fig,ax
+        plt.close()  # return fig, ax  # plt.show()
+
+
 
 
 def load(filepath, metric, extent=None, index_names=globals.index_names):

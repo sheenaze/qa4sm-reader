@@ -8,6 +8,17 @@ __license__ = "mit"
 
 """
 Contains testing code for ncplot.py
+
+Missing: 
+* rare cases in get_value_range()
+    * Gridded dataset with missing row/column, resulting in multiple stepsizes, 
+      which are handled in '_get_grid' and '_float_gcd'
+    * metric not given to dfplot
+    * metric not in globals
+    * force quantile
+* init_plot()
+    * plot without colorbar
+    
 """
 
 
@@ -178,8 +189,8 @@ def test_boxplot_GLDAS_options():
     out_name = 'test_boxplot_GLDAS_options'
     variables = ncplot.get_var(filepath, 'R')[:-1]
     ncplot.boxplot(filepath, variables, out_dir=out_dir, out_name=out_name,
-                   watermark_pos=None, out_type=['png', '.svg'], dpi=300,
-                   print_stat=False, add_title=False)
+                   out_type=['png', '.svg'], dpi=300,
+                   print_stat=False, add_title=False, watermark_pos='bottom')
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
 
 
@@ -243,16 +254,17 @@ def test_mapplot_ISMN_extent():  # 18
 def test_mapplot_GLDAS_extent():  # 19
     filepath = get_path('GLDAS')
     out_dir = get_path('mapplot')
-    out_name = 'test_gridmap_extent'
+    out_name = 'mapplot_GLDAS_extent'
     out_type = 'png'
     var = ncplot.get_var(filepath, 'R')[0]  # take the first var
     ncplot.mapplot(filepath, var, EXTENT_GRID, out_dir, out_name, out_type,
                    map_resolution='10m')
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
-#
-# def test_plot_all_extent():
-#     filepath = get_path('GLDAS')
-#     out_dir = get_path('plot_all')
-#     out_type = 'png'
-#     ncplot.plot_all(filepath, extent=(-11, 0, 51, 56), out_dir=out_dir, out_type=out_type,
-#                     mapplot_kwargs={'map_resolution': '10m'})
+
+
+def test_plot_all_extent():
+    filepath = get_path('GLDAS')
+    out_dir = get_path('plot_all')
+    out_type = 'png'
+    ncplot.plot_all(filepath, extent=EXTENT_GRID, out_dir=out_dir, out_type=out_type,
+                    boxplot_kwargs={'watermark_pos' : None}, mapplot_kwargs={'figsize' : [11.32, 6.10]})

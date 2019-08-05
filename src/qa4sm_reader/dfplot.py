@@ -445,13 +445,13 @@ def get_value_range(ds, metric=None, force_quantile=False, quantiles=[0.025, 0.9
         try:
             v_min = globals._metric_value_ranges[metric][0]
             v_max = globals._metric_value_ranges[metric][1]
-            if (v_min == None and v_max == None):  # get quantile range and make symmetric around 0.
+            if (v_min is None and v_max is None):  # get quantile range and make symmetric around 0.
                 v_min, v_max = get_quantiles(ds, quantiles)
                 v_max = max(abs(v_min), abs(v_max))  # make sure the range is symmetric around 0
                 v_min = -v_max
-            elif v_min == None:
+            elif v_min is None:
                 v_min = get_quantiles(ds, quantiles)[0]
-            elif v_max == None:
+            elif v_max is None:
                 v_max = get_quantiles(ds, quantiles)[1]
             else:  # v_min and v_max are both determinded in globals
                 pass
@@ -644,7 +644,8 @@ def style_map(ax, plot_extent, add_grid=True, map_resolution=globals.naturaleart
             gltext.ylocator = mticker.FixedLocator(yticks)
         except RuntimeError as e:
             print("No tick labels plotted.\n" + str(e))
-    if add_topo: ax.stock_img()
+    if add_topo:
+        ax.stock_img()
     if add_coastline:
         coastline = cfeature.NaturalEarthFeature('physical', 'coastline',
                                                  map_resolution,
