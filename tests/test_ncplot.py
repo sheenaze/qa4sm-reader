@@ -1,15 +1,40 @@
 # -*- coding: utf-8 -*-
 
+
+__author__ = "Lukas Racbhauer"
+__copyright__ = "Lukas Racbhauer"
+__license__ = "mit"
+
+
+"""
+Contains testing code for ncplot.py
+
+Missing: 
+* rare cases in get_value_range()
+    * Gridded dataset with missing row/column, resulting in multiple stepsizes, 
+      which are handled in '_get_grid' and '_float_gcd'
+    * metric not given to dfplot
+    * metric not in globals
+    * force quantile
+* init_plot()
+    * plot without colorbar
+    
+"""
+
+
 from qa4sm_reader import ncplot
 import pandas as pd
 import numpy as np
 import os
 import pytest
 from pandas.util.testing import assert_frame_equal
+import warnings
+EXTENT_GRID = (-6.2, -5.3, 56, 58)  # GB, Scotland
+EXTENT_SCATTER = (-125, -109, 30, 40)  # USA, California
 
-__author__ = "Lukas Racbhauer"
-__copyright__ = "Lukas Racbhauer"
-__license__ = "mit"
+
+old_cwd = os.getcwd()
+os.chdir(os.path.join(os.path.dirname(__file__), 'test_results'))  # The default plot functions will store their stuff in CWD.
 
 
 def get_path(case):
@@ -62,7 +87,7 @@ def test_load_data():
     exp_index = [0, 1]
     exp_columns = ['lat', 'lon', 'R_between_6-ISMN_2-SMAP', 'R_between_6-ISMN_3-ASCAT']
     exp_result = pd.DataFrame(exp_data, exp_index, exp_columns)
-    df = ncplot.load_data(filepath, variables, extent=(-130, -110, 30, 36))
+    df = ncplot.load_data(filepath, variables, extent=(-130, -110, 30, 36))  # TODO: change to fixture, update exp_data (-130, -110, 30, 36) -> (-125, -109, 30, 40)
     assert_frame_equal(df, exp_result)
 
 
@@ -128,79 +153,118 @@ def test_load():
                        'ds_version': 'ESA_CCI_SM_C_V04_4', 'ds_version_pretty_name': 'v04.4',
                        'ref_pretty_name': 'ISMN', 'ref_version': 'ISMN_V20180712_TEST',
                        'ref_version_pretty_name': '20180712 testset'}}
-    df, varmeta = ncplot.load(filepath, metric, extent=(-125, -109, 30, 40))
+    df, varmeta = ncplot.load(filepath, metric, extent=EXTENT_SCATTER)
     assert varmeta == exp_varmeta
     assert_frame_equal(df, exp_df)
 
 
-def test_boxplot():
+# === Boxplot ===
+def test_boxplot_ISMN_default():
+    filepath = get_path('ISMN')
+    ncplot.boxplot(filepath, 'R')
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))  # TODO: print full filename
+
+
+def test_boxplot_ISMN_nan_default():
+    filepath = get_path('ISMN_nan')
+    ncplot.boxplot(filepath, 'rho')
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))  # TODO: print full filename
+
+
+def test_boxplot_GLDAS_default():
+    filepath = get_path('GLDAS')
+    ncplot.boxplot(filepath, 'R')
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
+
+
+def test_boxplot_GLDAS_nan_default():
+    filepath = get_path('GLDAS_nan')
+    ncplot.boxplot(filepath, 'rho')
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
+
+
+def test_boxplot_GLDAS_options():
+    out_dir = get_path('boxplot')
+    filepath = get_path('GLDAS')
+    out_name = 'test_boxplot_GLDAS_options'
+    variables = ncplot.get_var(filepath, 'R')[:-1]
+    ncplot.boxplot(filepath, variables, out_dir=out_dir, out_name=out_name,
+                   out_type=['png', '.svg'], dpi=300,
+                   print_stat=False, add_title=False, watermark_pos='bottom')
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
+
+
+def test_boxplot_ISMN_extent():
     filepath = get_path('ISMN')
     out_dir = get_path('boxplot')
-    ncplot.boxplot(filepath, 'R', out_dir=out_dir, out_type='png')
+    out_name = 'test_boxplot_ISMN_extent'
+    out_type = 'png'
+    ncplot.boxplot(filepath, 'R', (-125, -109, 30, 40), out_dir, out_name, out_type)
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
 
 
-# def test_boxplot2():  # demonstrate some more functionality
-#     filepath = get_path('GLDAS')
-#     out_dir = get_path('boxplot')
-#     variables = ncplot.get_var(filepath, 'R')[:-1]
-#     ncplot.boxplot(filepath, variables, out_dir=out_dir,
-#                    watermark_pos=None, out_type=['png', 'svg'], dpi=300,
-#                    printnumbers=False, add_title=False)
-#
-#
-# def test_scattermap():
-#     filepath = get_path('ISMN')
-#     out_dir = get_path('mapplot')
-#     var = ncplot.get_var(filepath, 'R')[0]  # take the first var
-#     ncplot.mapplot(filepath, var, out_dir=out_dir, out_type='png')
-#
-#
-# def test_gridmap():
-#     filepath = get_path('GLDAS')
-#     out_dir = get_path('mapplot')
-#     var = ncplot.get_var(filepath, 'R')[0]  # take the first var
-#     ncplot.mapplot(filepath, var, out_dir=out_dir, out_type='png')
-#
-#
-# def test_boxplot_extent():
-#     filepath = get_path('ISMN')
-#     out_dir = get_path('boxplot')
-#     out_name = 'test_boxplot_extent'
-#     out_type = ['png', 'svg']
-#     ncplot.boxplot(filepath, 'R', (-125, -109, 30, 40), out_dir, out_name, out_type)
-#
-#
-# def test_boxplot2_extent():
-#     filepath = get_path('GLDAS')
-#     out_dir = get_path('boxplot')
-#     out_name = 'test_boxplot2_extent'
-#     out_type = ['png', 'svg']
-#     ncplot.boxplot(filepath, 'R', (-11, 0, 51, 56), out_dir, out_name, out_type)
-#
-#
-# def test_scattermap_extent():
-#     filepath = get_path('ISMN')
-#     out_dir = get_path('mapplot')
-#     out_name = 'test_scattermap_extent'
-#     out_type = ['png', 'svg']
-#     var = ncplot.get_var(filepath, 'R')[0]  # take the first var
-#     ncplot.mapplot(filepath, var, (-125, -109, 30, 40), out_dir, out_name, out_type,
-#                    map_resolution='10m', add_us_states=True)
-#
-#
-# def test_gridmap_extent():
-#     filepath = get_path('GLDAS')
-#     out_dir = get_path('mapplot')
-#     out_name = 'test_gridmap_extent'
-#     out_type = ['png', 'svg']
-#     var = ncplot.get_var(filepath, 'R')[0]  # take the first var
-#     ncplot.mapplot(filepath, var, (-11, 0, 51, 56), out_dir, out_name, out_type,
-#                    map_resolution='10m')
-#
-#
-# def test_plot_all_extent():
-#     filepath = get_path('GLDAS')
-#     out_dir = get_path('plot_all')
-#     out_type = 'png'
-#     ncplot.plot_all(filepath, extent=(-11, 0, 51, 56), out_dir=out_dir, out_type=out_type,
-#                     mapplot_kwargs={'map_resolution': '10m'})
+def test_boxplot_GLDAS_nan_extent():
+    filepath = get_path('GLDAS_nan')
+    out_dir = get_path('boxplot')
+    out_name = 'test_boxplot_GLDAS_nan_extent'
+    ncplot.boxplot(filepath, 'R', EXTENT_GRID, out_dir, out_name)
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
+
+
+# === mapplot ===
+def test_mapplot_ISMN_default(): # TODO: takes long. why?
+    filepath = get_path('ISMN')
+    var = ncplot.get_var(filepath, 'R')[0]  # take the first var
+    ncplot.mapplot(filepath, var)
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
+
+
+def test_mapplot_ISMN_nan_default(): # TODO: takes extremely long (minutes). why?
+    filepath = get_path('ISMN_nan')
+    var = ncplot.get_var(filepath, 'rho')[0]  # take the first var
+    ncplot.mapplot(filepath, var)
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
+
+
+def test_mapplot_GLDAS_default():  # 16
+    filepath = get_path('GLDAS')
+    var = ncplot.get_var(filepath, 'R')[0]  # take the first var
+    ncplot.mapplot(filepath, var)
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
+
+
+def test_mapplot_GLDAS_nan_default():  # 17
+    filepath = get_path('GLDAS_nan')
+    var = ncplot.get_var(filepath, 'rho')[0]  # take the first var
+    ncplot.mapplot(filepath, var)
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
+
+
+def test_mapplot_ISMN_extent():  # 18
+    filepath = get_path('ISMN')
+    out_dir = get_path('mapplot')
+    out_name = 'mapplot_ISMN_extent'
+    out_type = ['png', 'pdf', 'svg']
+    var = ncplot.get_var(filepath, 'R')[0]  # take the first var
+    ncplot.mapplot(filepath, var, EXTENT_SCATTER, out_dir, out_name, out_type,
+                   map_resolution='10m', add_us_states=True)
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
+
+
+def test_mapplot_GLDAS_extent():  # 19
+    filepath = get_path('GLDAS')
+    out_dir = get_path('mapplot')
+    out_name = 'mapplot_GLDAS_extent'
+    out_type = 'png'
+    var = ncplot.get_var(filepath, 'R')[0]  # take the first var
+    ncplot.mapplot(filepath, var, EXTENT_GRID, out_dir, out_name, out_type,
+                   map_resolution='10m')
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
+
+
+def test_plot_all_extent():
+    filepath = get_path('GLDAS')
+    out_dir = get_path('plot_all')
+    out_type = 'png'
+    ncplot.plot_all(filepath, extent=EXTENT_GRID, out_dir=out_dir, out_type=out_type,
+                    boxplot_kwargs={'watermark_pos' : None}, mapplot_kwargs={'figsize' : [11.32, 6.10]})

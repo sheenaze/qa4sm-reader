@@ -1,40 +1,34 @@
 # -*- coding: utf-8 -*-
 
+
+__author__ = "Lukas Racbhauer"
+__copyright__ = "2019, TU Wien, Department of Geodesy and Geoinformation"
+__license__ = "mit"
+
+
 """
 Contains an interface for opening QA4SM output files (*.nc), 
 loading certain parts as pandas.DataFrame 
 and producing plots using the dfplot module in this package.
+
+naming convention:
+------------------
+filepath : str
+    Path to the *.nc file to be processed.
+metric : str
+    metric to be plotted.
+metrics : list
+    list of [metric]
+var : str
+    variable to be plotted.
+variables : list
+    list of [var]
+meta : dict
+    dictionary containing metadata for one var
+varmeta : dict
+    dictionary containing {var : meta}
+    
 Internally, xarray is used to open the NetCDF files.
-"""
-
-"""
-Copyright (c) 2019, TU Wien, Department of Geodesy and Geoinformation
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-
-* Neither the name of TU Wien Department of Geodesy and Geoinformation nor
-  the names of its contributors may be used to endorse or promote products
-  derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 from qa4sm_reader import dfplot
@@ -127,8 +121,8 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
 
         # === mapplot ===
         for var in varmeta:
-            if (varmeta[var]['ds'] in globals.scattered_datasets or varmeta[var][
-                'ref'] in globals.scattered_datasets):  # do scatterplot
+            if (varmeta[var]['ds'] in globals.scattered_datasets or
+                    varmeta[var]['ref'] in globals.scattered_datasets):  # do scatterplot
                 fig, ax = dfplot.scatterplot(df, var=var, meta=varmeta[var], **mapplot_kwargs)
             else:
                 fig, ax = dfplot.mapplot(df, var=var, meta=varmeta[var], **mapplot_kwargs)
@@ -170,7 +164,7 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         If None, no file is saved.
         The default is png.
     **plot_kwargs : dict, optional
-        Additional keyword arguments that are passed to dfplot.
+        Additional keyword arguments that are passed to dfplot.boxplot.
 
     Returns
     -------
@@ -203,7 +197,7 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
         if not out_name: out_name = 'boxplot_' + '__'.join(
-            [var for var in variables])  # TODO: write a function that produces meaningful names.
+            [var for var in variables])  # TODO: write a function that produces meaningful names. And returns filename.
         filename = os.path.join(out_dir, out_name)
         if type(out_type) is not list: out_type = [out_type]
         for ending in out_type:
@@ -221,7 +215,7 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         plt.close()
         return
     else:
-        return fig, ax
+        plt.close()  # return fig, ax
 
 
 def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=None,
@@ -292,6 +286,7 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
         if type(out_type) is not list: out_type = [out_type]
         for ending in out_type:
             plt.savefig('{}.{}'.format(filename, ending), dpi='figure')
+        plt.close()
     elif out_name:
         if out_name.find(
                 '.') == -1:  # append '.png'out_name contains no '.', which is hopefully followed by a meaningful file ending.
@@ -300,10 +295,11 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
             os.makedirs(out_dir)
         filename = os.path.join(out_dir, out_name)
         plt.savefig(filename, dpi='figure')
+        plt.close()
     else:
-        plt.show()
-    plt.close()
-    # return fig,ax
+        plt.close()  # return fig, ax  # plt.show()
+
+
 
 
 def load(filepath, metric, extent=None, index_names=globals.index_names):

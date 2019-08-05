@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+
+
+__author__ = "Lukas Racbhauer"
+__copyright__ = "Lukas Racbhauer"
+__license__ = "mit"
+
+
 from pkg_resources import get_distribution, DistributionNotFound
 from qa4sm_reader import ncplot
 
@@ -12,3 +19,4 @@ except DistributionNotFound:
     __version__ = 'unknown'
 finally:
     del get_distribution, DistributionNotFound
+
