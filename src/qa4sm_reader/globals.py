@@ -2,8 +2,9 @@
 
 
 __author__ = "Lukas Racbhauer"
-__copyright__ = "Lukas Racbhauer"
+__copyright__ = "2019, TU Wien, Department of Geodesy and Geoinformation"
 __license__ = "mit"
+
 
 """
 Global variables collected from different sources.
