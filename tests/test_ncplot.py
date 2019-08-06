@@ -162,7 +162,7 @@ def test_load():
 # TODO: find out why the first of the plots does not use sns 'whitegrid' style.
 def test_boxplot_ISMN_nan_default():
     filepath = get_path('ISMN_nan')
-    ncplot.boxplot(filepath, 'rho', figsize=[9, 4.68])
+    ncplot.boxplot(filepath, 'rho')
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))  # TODO: print full filename
 
 
@@ -180,7 +180,7 @@ def test_boxplot_GLDAS_default():
 
 def test_boxplot_GLDAS_nan_default():
     filepath = get_path('GLDAS_nan')
-    ncplot.boxplot(filepath, 'rho', figsize=[9, 4.68])
+    ncplot.boxplot(filepath, 'rho')
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
 
 
@@ -200,7 +200,7 @@ def test_boxplot_ISMN_extent():
     out_dir = get_path('boxplot')
     out_name = 'test_boxplot_ISMN_extent'
     out_type = 'png'
-    ncplot.boxplot(filepath, 'R', (-125, -109, 30, 40), out_dir, out_name, out_type)
+    ncplot.boxplot(filepath, 'R', EXTENT_SCATTER, out_dir, out_name, out_type)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
 
 
@@ -208,7 +208,7 @@ def test_boxplot_GLDAS_nan_extent():
     filepath = get_path('GLDAS_nan')
     out_dir = get_path('boxplot')
     out_name = 'test_boxplot_GLDAS_nan_extent'
-    ncplot.boxplot(filepath, 'R', EXTENT_GRID, out_dir, out_name, figsize=[9, 4.68])
+    ncplot.boxplot(filepath, 'R', EXTENT_GRID, out_dir, out_name)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
 
 
@@ -247,8 +247,7 @@ def test_mapplot_ISMN_extent():
     out_name = 'mapplot_ISMN_extent'
     out_type = ['png', 'pdf']
     var = ncplot.get_var(filepath, 'R')[0]  # take the first var
-    ncplot.mapplot(filepath, var, EXTENT_SCATTER, out_dir, out_name, out_type,
-                   map_resolution='50m', add_us_states=True)
+    ncplot.mapplot(filepath, var, EXTENT_SCATTER, out_dir, out_name, out_type, map_resolution='50m', add_us_states=True)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
 
 
@@ -258,13 +257,12 @@ def test_mapplot_GLDAS_extent():  # TODO: find out why it takes fucking 12s to p
     out_name = 'mapplot_GLDAS_extent'
     out_type = 'png'
     var = ncplot.get_var(filepath, 'R')[0]  # take the first var
-    ncplot.mapplot(filepath, var, EXTENT_GRID, out_dir, out_name, out_type,
-                   map_resolution='50m')
+    ncplot.mapplot(filepath, var, EXTENT_GRID, out_dir, out_name, out_type, map_resolution='50m')
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
 
 
 def test_plot_all_extent():
     filepath = get_path('GLDAS')
-    # out_dir = get_path('plot_all')
-    ncplot.plot_all(filepath, metrics={'n_obs', 'R', 'ubRMSD'}, extent=EXTENT_GRID,  # out_dir=out_dir,
-                    boxplot_kwargs={'watermark_pos': None}, mapplot_kwargs={'figsize': [11.32, 6.10]})
+    ncplot.plot_all(filepath, metrics={'n_obs', 'R', 'ubRMSD'}, extent=EXTENT_GRID,
+                    boxplot_kwargs={'watermark_pos': None}, mapplot_kwargs={'dpi': 70})
+    warnings.warn('Test does not assert output images.')

@@ -18,7 +18,6 @@ import cartopy.crs as ccrs
 matplotlib_ppi = 72  # Don't change this, it's a matplotlib convention.
 index_names = ['lat', 'lon']  # Names used for 'lattitude' and 'longitude' coordinate.
 dpi = 100  # Resolution in which plots are going to be rendered.
-max_title_len = 50  # maximum length of plot title in chars. if longer, it will be broken in multiple lines.
 title_pad = 12.0  # Padding below the title in points. default padding is matplotlib.rcParams['axes.titlepad'] = 6.0
 data_crs = ccrs.PlateCarree()  # Default map projection. use one of
 
@@ -30,10 +29,14 @@ crs = ccrs.PlateCarree()  # projection. Must be a class from cartopy.crs. Note, 
 markersize = 4  # diameter of Marker in points.
 map_pad = 0.15  # padding relative to map height.
 grid_intervals = [0.25, 0.5, 1, 2, 5, 10, 30]  # grid spacing in degree to choose from (plotter will try to make 5 gridlines in the smaller dimension)
+max_title_len = 50  # maximum length of plot title in chars. if longer, it will be broken in multiple lines.
 
 # === boxplot defaults ===
 boxplot_printnumbers = True  # Print 'median', 'nObs', 'stdDev' to the boxplot.
-boxplot_figsize = [6.30, 4.68]  # size of the output figure in inches.
+boxplot_figsize = [6.30, 4.68]  # size of the output figure in inches. NO MORE USED.
+boxplot_height = 4.68
+boxplot_width = 1.5  # times (n+1), where n is the number of boxes.
+boxplot_title_len = 15  # times the number of boxes. maximum length of plot title in chars.
 
 # === watermark defaults ===
 watermark = u'made with QA4SM (qa4sm.eodc.eu)'  # Watermark string

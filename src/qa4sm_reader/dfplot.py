@@ -37,7 +37,7 @@ cconfig['data_dir'] = os.path.join(os.path.dirname(__file__), 'cartopy')
 
 
 def boxplot(df, varmeta, title=None, label=None, print_stat=globals.boxplot_printnumbers,
-            watermark_pos=globals.watermark_pos, figsize=globals.boxplot_figsize,
+            watermark_pos=globals.watermark_pos, figsize=None,
             dpi=globals.dpi, add_title=True, title_pad=globals.title_pad):
     """
     Create a boxplot from the variables in df. 
@@ -100,9 +100,10 @@ def boxplot(df, varmeta, title=None, label=None, print_stat=globals.boxplot_prin
             varmeta[var]['ds_version_pretty_name']) for var in varmeta]
 
     # === plot ===
+    if not figsize:
+        # figsize = globals.boxplot_figsize
+        figsize = [globals.boxplot_width*(1+len(df.columns)), globals.boxplot_height]
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
-    import seaborn as sns
-    sns.set_style("whitegrid")  # TODO: Bug. does not work for the first plot (test_boxplot_ISMN_default()) for some strange reason!!!
     sns.set_style("whitegrid")  # TODO: Bug. does not work for the first plot (test_boxplot_ISMN_default()) for some strange reason!!!
     ax = sns.boxplot(data=df, ax=ax, width=0.15, showfliers=False, color='white')
     sns.despine()  # remove ugly spines (=border around plot) right and top.
@@ -114,11 +115,12 @@ def boxplot(df, varmeta, title=None, label=None, print_stat=globals.boxplot_prin
     if not label:
         label = (globals._metric_name[metric] +
                  globals._metric_description[metric].format(globals._metric_units[globmeta['ref']]))
-    ax.set_ylabel(label)
+    ax.set_ylabel(label, weight='normal')  # TODO: Bug: If a circumflex ('^') is in the string, it becomes bold.)
 
     # === generate title with automatic line break ===
     if add_title:
         if not title:
+            max_title_len = globals.boxplot_title_len * len(df.columns)
             if globmeta['metric'] == 'n_obs':  # special case n_obs.
                 title = list()  # each list element is a line in the plot title
                 title.append(
@@ -126,7 +128,7 @@ def boxplot(df, varmeta, title=None, label=None, print_stat=globals.boxplot_prin
                                                                                     globmeta['ref_version_pretty_name']))
                 for name in varmeta['n_obs']['ds_pretty_name']:  # TODO: have a look at parawrap (https://www.tutorialspoint.com/python/python_text_wrapping) or textwrap (https://www.geeksforgeeks.org/textwrap-text-wrapping-filling-python/)
                     to_append = '{}, '.format(name)
-                    if len(title[-1] + to_append) <= globals.max_title_len:  # line not to long: add to current line
+                    if len(title[-1] + to_append) <= max_title_len:  # line not to long: add to current line
                         title[-1] += to_append
                     else:  # add to next line
                         title.append(to_append)
@@ -136,7 +138,7 @@ def boxplot(df, varmeta, title=None, label=None, print_stat=globals.boxplot_prin
                     'Comparing {} ({}) to '.format(globmeta['ref_pretty_name'], globmeta['ref_version_pretty_name']))
                 for var in varmeta:
                     to_append = '{}, '.format(varmeta[var]['ds_pretty_name'])
-                    if len(title[-1] + to_append) <= globals.max_title_len:  # line not to long: add to current line
+                    if len(title[-1] + to_append) <= max_title_len:  # line not to long: add to current line
                         title[-1] += to_append
                     else:  # add to next line
                         title.append(to_append)
@@ -340,15 +342,15 @@ def mapplot(df, var, meta, title=None, label=None, plot_extent=None,
     return fig, ax
 
 
+def _float_gcd(a, b, atol=1e-08):
+    "Greatest common divisor (=groesster gemeinsamer teiler)"
+    while abs(b) > atol:
+        a, b = b, a % b
+    return a
+
+
 def _get_grid(a):
     "Find the stepsize of the grid behind a and return the parameters for that grid axis."
-
-    def _float_gcd(a, b, atol=1e-08):
-        "Greatest common divisor (=groesster gemeinsamer teiler)"
-        while abs(b) > atol:
-            a, b = b, a % b
-        return a
-
     a = np.unique(a)  # get unique values and sort
     das = np.unique(np.diff(a))  # get unique stepsizes and sort
     da = das[0]  # get smallest stepsize
@@ -358,6 +360,11 @@ def _get_grid(a):
     a_max = a[-1]
     len_a = int((a_max - a_min) / da + 1)
     return a_min, a_max, da, len_a
+
+
+def _value2index(a, a_min, da):
+    "Return the indexes corresponding to a. a and the returned index is a numpy array."
+    return ((a - a_min) / da).astype('int')
 
 
 def geotraj_to_geo2d(df, var, index=globals.index_names):
@@ -386,11 +393,6 @@ def geotraj_to_geo2d(df, var, index=globals.index_names):
     data_extent : tuple
         (x_min, x_max, y_min, y_max) in Data coordinates.
     """
-
-    def _value2index(a, a_min, da):
-        "Return the indexes corresponding to a. a and the returned index is a numpy array."
-        return ((a - a_min) / da).astype('int')
-
     xx = df[index[1]]  # lon
     yy = df[index[0]]  # lat
     data = df[var]
@@ -598,7 +600,7 @@ def _make_cbar(fig, im, cax, ds, v_min, v_max, meta, label=None):
             raise Exception('The metric \'{}\' or reference \'{}\' is not known.\n'.format(metric, ref) + str(e))
     extend = get_extend_cbar(metric)
     cbar = fig.colorbar(im, cax=cax, orientation='horizontal', extend=extend)
-    cbar.set_label(label)  # , size=5)
+    cbar.set_label(label, weight='normal')  # TODO: Bug: If a circumflex ('^') is in the string, it becomes bold.)
     cbar.outline.set_linewidth(0.4)
     cbar.outline.set_edgecolor('black')
     cbar.ax.tick_params(width=0.4)  # , labelsize=4)
@@ -714,24 +716,24 @@ def make_watermark(fig, placement):
         pass
 
 
+def _get_globdict(meta):
+    globkeys = ['metric', 'ref', 'ref_pretty_name', 'ref_version', 'ref_version_pretty_name']
+    return {k: meta[k] for k in globkeys}
+
+
 def _get_globmeta(varmeta):
     """
     get globmeta from varmeta and make sure it is consistent in itself.
     """
-    globkeys = ['metric', 'ref', 'ref_pretty_name', 'ref_version', 'ref_version_pretty_name']
-
-    def get_globdict(meta):
-        return {k: meta[k] for k in globkeys}
-
     variter = iter(varmeta)
-    globmeta = get_globdict(varmeta[next(variter)])
+    globmeta = _get_globdict(varmeta[next(variter)])
     while True:  # for loop with iterator: compare if globmeta is universal among all variables
         try:
             var = next(variter)
-            if globmeta != get_globdict(varmeta[var]):
+            if globmeta != _get_globdict(varmeta[var]):
                 raise Exception(
                     'Global Metadata inconsistent among variables!\nglobmeta : {}\nvs.\nglobmeta(\'{}\') : {}'.format(
-                        globmeta, var, get_globdict(varmeta[var])))
+                        globmeta, var, _get_globdict(varmeta[var])))
         except StopIteration:
             break
     return globmeta
