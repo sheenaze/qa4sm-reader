@@ -25,17 +25,15 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import matplotlib.gridspec as gridspec
-import \
-    colorcet as cc  # even tough not used explicitely it adds colorcet colormaps to be found by matplotlib.cc.get_colormap()
+import colorcet as cc  # not used but adds colorcet colormaps to be found by matplotlib.cc.get_colormap()
 
 from cartopy import config as cconfig
-
-cconfig['data_dir'] = os.path.join(os.path.dirname(__file__), 'cartopy')
-# import cartopy.crs as ccrs #crs objects come from globals.py
 import cartopy.feature as cfeature
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 import warnings
+
+cconfig['data_dir'] = os.path.join(os.path.dirname(__file__), 'cartopy')
 
 
 def boxplot(df, varmeta, title=None, label=None, print_stat=globals.boxplot_printnumbers,
@@ -103,7 +101,9 @@ def boxplot(df, varmeta, title=None, label=None, print_stat=globals.boxplot_prin
 
     # === plot ===
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
-    sns.set_style("whitegrid")
+    import seaborn as sns
+    sns.set_style("whitegrid")  # TODO: Bug. does not work for the first plot (test_boxplot_ISMN_default()) for some strange reason!!!
+    sns.set_style("whitegrid")  # TODO: Bug. does not work for the first plot (test_boxplot_ISMN_default()) for some strange reason!!!
     ax = sns.boxplot(data=df, ax=ax, width=0.15, showfliers=False, color='white')
     sns.despine()  # remove ugly spines (=border around plot) right and top.
 
@@ -124,7 +124,7 @@ def boxplot(df, varmeta, title=None, label=None, print_stat=globals.boxplot_prin
                 title.append(
                     'Number of spacial and temporal matches between {} ({})'.format(globmeta['ref_pretty_name'],
                                                                                     globmeta['ref_version_pretty_name']))
-                for name in varmeta['n_obs']['ds_pretty_name']:
+                for name in varmeta['n_obs']['ds_pretty_name']:  # TODO: have a look at parawrap (https://www.tutorialspoint.com/python/python_text_wrapping) or textwrap (https://www.geeksforgeeks.org/textwrap-text-wrapping-filling-python/)
                     to_append = '{}, '.format(name)
                     if len(title[-1] + to_append) <= globals.max_title_len:  # line not to long: add to current line
                         title[-1] += to_append
@@ -236,11 +236,12 @@ def scatterplot(df, var, meta, title=None, label=None, plot_extent=None,
     style_map(ax, plot_extent, **style_kwargs)
 
     # === layout ===
-    fig.canvas.draw()  # nötig wegen bug in cartopy. dauert sehr lange!
+    fig.canvas.draw()  # very slow. necessary bcs of a bug in cartopy: https://github.com/SciTools/cartopy/issues/1207
     plt.tight_layout()  # pad=1 in units of the font size (default 10points). #pad=0.5,h_pad=1,w_pad=1,rect=(0, 0, 1, 1))
 
     # === watermark ===
-    if watermark_pos: make_watermark(fig, watermark_pos)
+    if watermark_pos:
+        make_watermark(fig, watermark_pos)
 
     return fig, ax
 
@@ -330,8 +331,8 @@ def mapplot(df, var, meta, title=None, label=None, plot_extent=None,
     style_map(ax, plot_extent, **style_kwargs)
 
     # === layout ===
-    fig.canvas.draw()  # nötig wegen bug in cartopy. dauert sehr lange!
-    plt.tight_layout(pad=1)  # pad=0.5,h_pad=1,w_pad=1,rect=(0, 0, 1, 1))
+    fig.canvas.draw()  # very slow. necessary bcs of a bug in cartopy: https://github.com/SciTools/cartopy/issues/1207
+    plt.tight_layout()  # pad=1)  # pad=0.5,h_pad=1,w_pad=1,rect=(0, 0, 1, 1))
 
     # === watermark ===
     if watermark_pos:
@@ -531,10 +532,14 @@ def get_plot_extent(df, grid=False):
     extent[1] += padding
     extent[2] -= padding
     extent[3] += padding
-    if extent[0] < -180: extent[0] = -180
-    if extent[1] > 180: extent[1] = 180
-    if extent[2] < -90: extent[2] = -90
-    if extent[3] > 90: extent[3] = 90
+    if extent[0] < -180:
+        extent[0] = -180
+    if extent[1] > 180:
+        extent[1] = 180
+    if extent[2] < -90:
+        extent[2] = -90
+    if extent[3] > 90:
+        extent[3] = 90
     return extent
 
 
@@ -619,8 +624,7 @@ def style_map(ax, plot_extent, add_grid=True, map_resolution=globals.naturaleart
     ax.outline_patch.set_linewidth(0.4)
     if add_grid:  # add gridlines
         grid_interval = max((plot_extent[1] - plot_extent[0]),
-                            (plot_extent[3] - plot_extent[
-                                2])) / 5  # create approximately 4 gridlines in the bigger dimension
+                            (plot_extent[3] - plot_extent[2])) / 5  # create apprx. 5 gridlines in the bigger dimension
         grid_interval = min(globals.grid_intervals, key=lambda x: abs(
             x - grid_interval))  # select the grid spacing from the list which fits best
         gl = ax.gridlines(crs=globals.data_crs, draw_labels=False,
@@ -661,7 +665,8 @@ def style_map(ax, plot_extent, add_grid=True, map_resolution=globals.naturaleart
                                                map_resolution,
                                                edgecolor='black', facecolor='none')
         ax.add_feature(borders, linewidth=0.2, zorder=3)
-    if add_us_states: ax.add_feature(cfeature.STATES, linewidth=0.1, zorder=3)
+    if add_us_states:
+        ax.add_feature(cfeature.STATES, linewidth=0.1, zorder=3)
 
 
 def make_watermark(fig, placement):
@@ -696,8 +701,6 @@ def make_watermark(fig, placement):
                      fontsize=fontsize, color='grey',
                      horizontalalignment='right', verticalalignment='top',
                      xycoords='figure fraction', textcoords='offset points')
-        # pos2 = matplotlib.transforms.Bbox.from_extents(pos1.x0, pos1.y0, pos1.x1, pos1.y1-offset)
-        # ax.set_position(pos2) #todo: rather use fig.subplots_adjust
         top = fig.subplotpars.top
         fig.subplots_adjust(top=top - offset)
     elif placement == 'bottom':
@@ -705,8 +708,6 @@ def make_watermark(fig, placement):
                      fontsize=fontsize, color='grey',
                      horizontalalignment='left', verticalalignment='bottom',
                      xycoords='figure fraction', textcoords='offset points')
-        # pos2 = matplotlib.transforms.Bbox.from_extents(pos1.x0, pos1.y0+offset, pos1.x1, pos1.y1)
-        # ax.set_position(pos2) #todo: rather use fig.subplots_adjust
         bottom = fig.subplotpars.bottom
         fig.subplots_adjust(bottom=bottom + offset)  # defaults to rc when none!
     else:

@@ -68,7 +68,7 @@ def test__get_dir_name_type():
            ('H:\\MyFolder', 'MyName', {'.png', '.svg', '.pdf'})
 
 
-def test_get_var():
+def test_get_var():  # TODO: rename get_var to get_variables
     filepath = get_path('ISMN_nan')
     exp_result = ['R_between_6-ISMN_1-C3S',
                   'R_between_6-ISMN_2-SMAP',
@@ -87,7 +87,7 @@ def test_load_data():
     exp_index = [0, 1]
     exp_columns = ['lat', 'lon', 'R_between_6-ISMN_2-SMAP', 'R_between_6-ISMN_3-ASCAT']
     exp_result = pd.DataFrame(exp_data, exp_index, exp_columns)
-    df = ncplot.load_data(filepath, variables, extent=(-130, -110, 30, 36))  # TODO: change to fixture, update exp_data (-130, -110, 30, 36) -> (-125, -109, 30, 40)
+    df = ncplot.load_data(filepath, variables, extent=EXTENT_SCATTER)
     assert_frame_equal(df, exp_result)
 
 
@@ -109,7 +109,7 @@ def test_get_varmeta():
                        'ds_version': 'ESA_CCI_SM_C_V04_4', 'ds_version_pretty_name': 'v04.4',
                        'ref_pretty_name': 'ISMN', 'ref_version': 'ISMN_V20180712_TEST',
                        'ref_version_pretty_name': '20180712 testset'}}
-    assert ncplot.get_varmeta(filepath, variables) == exp_result
+    assert ncplot.get_varmeta(filepath, variables) == exp_result  # TODO? rename varmeta to metas
 
 
 def test_get_meta():
@@ -159,15 +159,16 @@ def test_load():
 
 
 # === Boxplot ===
-def test_boxplot_ISMN_default():
-    filepath = get_path('ISMN')
-    ncplot.boxplot(filepath, 'R')
-    warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))  # TODO: print full filename
-
-
+# TODO: find out why the first of the plots does not use sns 'whitegrid' style.
 def test_boxplot_ISMN_nan_default():
     filepath = get_path('ISMN_nan')
     ncplot.boxplot(filepath, 'rho', figsize=[9, 4.68])
+    warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))  # TODO: print full filename
+
+
+def test_boxplot_ISMN_default():
+    filepath = get_path('ISMN')
+    ncplot.boxplot(filepath, 'R')
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))  # TODO: print full filename
 
 
@@ -212,14 +213,14 @@ def test_boxplot_GLDAS_nan_extent():
 
 
 # === mapplot ===
-def test_mapplot_ISMN_default(): # TODO: takes long. why?
+def test_mapplot_ISMN_default():
     filepath = get_path('ISMN')
     var = ncplot.get_var(filepath, 'R')[0]  # take the first var
     ncplot.mapplot(filepath, var)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
 
 
-def test_mapplot_ISMN_nan_default(): # TODO: takes extremely long (minutes). why?
+def test_mapplot_ISMN_nan_default():
     filepath = get_path('ISMN_nan')
     var = ncplot.get_var(filepath, 'rho')[0]  # take the first var
     ncplot.mapplot(filepath, var)
@@ -233,38 +234,37 @@ def test_mapplot_GLDAS_default():  # 16
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
 
 
-def test_mapplot_GLDAS_nan_default():  # 17
+def test_mapplot_GLDAS_nan_default():  # TODO: find out why it takes fucking 14s to produce a dumb simple plot.
     filepath = get_path('GLDAS_nan')
     var = ncplot.get_var(filepath, 'rho')[0]  # take the first var
     ncplot.mapplot(filepath, var)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
 
 
-def test_mapplot_ISMN_extent():  # 18
+def test_mapplot_ISMN_extent():
     filepath = get_path('ISMN')
     out_dir = get_path('mapplot')
     out_name = 'mapplot_ISMN_extent'
-    out_type = ['png', 'pdf', 'svg']
+    out_type = ['png', 'pdf']
     var = ncplot.get_var(filepath, 'R')[0]  # take the first var
     ncplot.mapplot(filepath, var, EXTENT_SCATTER, out_dir, out_name, out_type,
-                   map_resolution='10m', add_us_states=True)
+                   map_resolution='50m', add_us_states=True)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
 
 
-def test_mapplot_GLDAS_extent():  # 19
+def test_mapplot_GLDAS_extent():  # TODO: find out why it takes fucking 12s to produce a dumb simple plot.
     filepath = get_path('GLDAS')
     out_dir = get_path('mapplot')
     out_name = 'mapplot_GLDAS_extent'
     out_type = 'png'
     var = ncplot.get_var(filepath, 'R')[0]  # take the first var
     ncplot.mapplot(filepath, var, EXTENT_GRID, out_dir, out_name, out_type,
-                   map_resolution='10m')
+                   map_resolution='50m')
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
 
 
 def test_plot_all_extent():
     filepath = get_path('GLDAS')
-    out_dir = get_path('plot_all')
-    out_type = 'png'
-    ncplot.plot_all(filepath, extent=EXTENT_GRID, out_dir=out_dir, out_type=out_type,
-                    boxplot_kwargs={'watermark_pos' : None}, mapplot_kwargs={'figsize' : [11.32, 6.10]})
+    # out_dir = get_path('plot_all')
+    ncplot.plot_all(filepath, metrics={'n_obs', 'R', 'ubRMSD'}, extent=EXTENT_GRID,  # out_dir=out_dir,
+                    boxplot_kwargs={'watermark_pos': None}, mapplot_kwargs={'figsize': [11.32, 6.10]})

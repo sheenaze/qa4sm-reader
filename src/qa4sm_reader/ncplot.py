@@ -63,10 +63,8 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
     ----------
     filepath : str
         Path to the *.nc file to be processed.
-    metric : str of list of str
-        metric to be plotted.
-        alternatively a list of variables can be given.
-        # todo: if None is passed iterate over all variables in the file and plot them
+    metrics : set or list
+        metrics to be plotted.
     extent : list
         [x_min,x_max,y_min,y_max] to create a subset of the data
     out_dir : [ None | str ], optional
@@ -85,7 +83,8 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
         out_dir = os.path.join(os.getcwd(), os.path.basename(filepath))
 
     # === Metadata ===
-    metrics = get_metrics(filepath)
+    if not metrics:
+        metrics = get_metrics(filepath)
 
     for metric in metrics:
         # === load data and metadata ===
@@ -235,7 +234,8 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
             fig, ax = dfplot.mapplot(df=df, var=var, meta=varmeta[var], **plot_kwargs)
 
         # === save ===
-        out_name = 'mapplot_' + var
+        if not out_name:
+            out_name = 'mapplot_' + var
         out_dir, out_name, out_type = _get_dir_name_type(out_dir, out_name, out_type)
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
