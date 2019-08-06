@@ -95,11 +95,7 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
 
         # === save ===
         curr_dir = os.path.join(out_dir, metric)
-        try:
-            out_name = 'boxplot_{}_{}-'.format(metric, [*varmeta.values()][0]['ref']) + '-'.join(
-                [varmeta[var]['ds'] for var in varmeta])
-        except TypeError:
-            out_name = 'boxplot_n_obs'
+        out_name = 'boxplot_{}'.format(metric)
         curr_dir, out_name, out_type = _get_dir_name_type(curr_dir, out_name, out_type)
         if not os.path.exists(curr_dir):
             os.makedirs(curr_dir)
@@ -110,11 +106,22 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
 
         # === mapplot ===
         for var in varmeta:
+            meta = varmeta[var]
             # === plot ===
-            fig, ax = dfplot.mapplot(df, var=var, meta=varmeta[var], **mapplot_kwargs)
+            fig, ax = dfplot.mapplot(df, var=var, meta=meta, **mapplot_kwargs)
 
             # === save ===
-            out_name = 'mapplot_' + var
+            ds_match = re.match(r'.*_between_(([0-9]+)-(.*)_([0-9]+)-(.*))', var)
+            if ds_match:
+                pair_name = ds_match.group(1)
+            else:
+                pair_name = var  # e.g. n_obs
+
+            if metric == pair_name:  # e.g. n_obs
+                out_name = 'overview_{}'.format(metric)
+            else:
+                out_name = 'overview_{}_{}'.format(pair_name, metric)
+
             for ending in out_type:
                 if out_type:  # don't attempt to save if None.
                     fname = os.path.join(curr_dir, out_name+ending)
@@ -169,8 +176,7 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
 
     # === save ===
     if not out_name:
-        out_name = 'boxplot_{}_{}-'.format([*varmeta.values()][0]['metric'], [*varmeta.values()][0]['ref']) + '-'.join(
-            [varmeta[var]['ds'] for var in varmeta])
+        out_name = 'boxplot_{}'.format(metric)
     out_dir, out_name, out_type = _get_dir_name_type(out_dir, out_name, out_type)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -224,12 +230,22 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
     df, varmeta = load(filepath, variables, extent)
 
     for var in varmeta:  # plot all specified variables (usually only one)
+        meta = varmeta[var]
         # === plot data ===
-        fig, ax = dfplot.mapplot(df=df, var=var, meta=varmeta[var], **plot_kwargs)
+        fig, ax = dfplot.mapplot(df=df, var=var, meta=meta, **plot_kwargs)
 
         # === save ===
         if not out_name:
-            out_name = 'mapplot_' + var
+            ds_match = re.match(r'.*_between_(([0-9]+)-(.*)_([0-9]+)-(.*))', var)
+            if ds_match:
+                pair_name = ds_match.group(1)
+            else:
+                pair_name = var  # e.g. n_obs
+
+            if meta['metric'] == pair_name:  # e.g. n_obs
+                out_name = 'overview_{}'.format(meta['metric'])
+            else:
+                out_name = 'overview_{}_{}'.format(pair_name, meta['metric'])
         out_dir, out_name, out_type = _get_dir_name_type(out_dir, out_name, out_type)
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
