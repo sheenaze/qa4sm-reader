@@ -58,7 +58,7 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
              mapplot_kwargs=dict()):
     """
     Creates boxplots for all metrics and map plots for all variables. Saves the output in a folder-structure.
-    
+
     Parameters
     ----------
     filepath : str
@@ -79,6 +79,8 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
     **plot_kwargs : dict, optional
         Additional keyword arguments that are passed to dfplot.
     """
+    fnames = list()  # list to store all filenames.
+
     if not out_dir:
         out_dir = os.path.join(os.getcwd(), os.path.basename(filepath))
 
@@ -102,7 +104,9 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
         for ending in out_type:
             fname = os.path.join(curr_dir, out_name+ending)
             plt.savefig(fname, dpi='figure')
-            plt.close()
+            fnames.append(fname)
+
+        plt.close()
 
         # === mapplot ===
         for var in varmeta:
@@ -123,10 +127,13 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
                 out_name = 'overview_{}_{}'.format(pair_name, metric)
 
             for ending in out_type:
-                if out_type:  # don't attempt to save if None.
-                    fname = os.path.join(curr_dir, out_name+ending)
-                    plt.savefig(fname, dpi='figure')
-                    plt.close()
+                fname = os.path.join(curr_dir, out_name+ending)
+                plt.savefig(fname, dpi='figure')
+                fnames.append(fname)
+
+            plt.close()
+
+    return fnames
 
 
 def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type=None,
@@ -134,7 +141,7 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
     """
     Creates a boxplot, displaying the variables corresponding to given metric.
     Saves a figure and returns Matplotlib fig and ax objects for further processing.
-    
+
     Parameters
     ----------
     filepath : str
@@ -145,11 +152,11 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
     extent : list
         [x_min,x_max,y_min,y_max] to create a subset of the data
     out_dir : [ None | str ], optional
-        Path to output generated plot. 
+        Path to output generated plot.
         If None, defaults to the current working directory.
         The default is None.
     out_name : [ None | str ], optional
-        Name of output file. 
+        Name of output file.
         If None, defaults to a name that is generated based on the variables.
         The default is None.
     out_type : [ str | list | None ], optional
@@ -168,6 +175,8 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
         Axes or list of axes containing the plot.
 
     """
+    fnames = list()  # list to store all filenames.
+
     # === load data and metadata ===
     df, varmeta = load(filepath, metric, extent)
 
@@ -183,14 +192,16 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
     for ending in out_type:
         fname = os.path.join(out_dir, out_name+ending)
         plt.savefig(fname, dpi='figure')
+        fnames.append(fname)
     plt.close()
+    return fnames
 
 
 def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=None,
             **plot_kwargs):
     """
     Plots data to a map, using the data as color. Plots a scatterplot for ISMN and a image plot for other input data.
-    
+
     Parameters
     ----------
     filepath : str
@@ -200,11 +211,11 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
     extent : list
         [x_min,x_max,y_min,y_max] to create a subset of the data
     out_dir : [ None | str ], optional
-        Path to output generated plot. 
+        Path to output generated plot.
         If None, defaults to the current working directory.
         The default is None.
     out_name : [ None | str ], optional
-        Name of output file. 
+        Name of output file.
         If None, defaults to a name that is generated based on the variables.
         The default is None.
     out_type : [ str | list | None ], optional
@@ -223,6 +234,8 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
         Axes or list of axes containing the plot.
 
     """
+    fnames = list()  # list to store all filenames.
+
     if isinstance(var, str):
         variables = [var]  # raise IOError('var needs to be a string, not {}.'.format(type(var)))
 
@@ -252,7 +265,9 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
         for ending in out_type:
             fname = os.path.join(out_dir, out_name+ending)
             plt.savefig(fname, dpi='figure')
+            fnames.append(fname)
         plt.close()
+    return fnames
 
 
 def load(filepath, metric, extent=None, index_names=globals.index_names):
