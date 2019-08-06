@@ -110,11 +110,9 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
 
         # === mapplot ===
         for var in varmeta:
-            if (varmeta[var]['ds'] in globals.scattered_datasets or
-                    varmeta[var]['ref'] in globals.scattered_datasets):  # do scatterplot
-                fig, ax = dfplot.scatterplot(df, var=var, meta=varmeta[var], **mapplot_kwargs)
-            else:
-                fig, ax = dfplot.mapplot(df, var=var, meta=varmeta[var], **mapplot_kwargs)
+            # === plot ===
+            fig, ax = dfplot.mapplot(df, var=var, meta=varmeta[var], **mapplot_kwargs)
+
             # === save ===
             out_name = 'mapplot_' + var
             for ending in out_type:
@@ -186,7 +184,6 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
             **plot_kwargs):
     """
     Plots data to a map, using the data as color. Plots a scatterplot for ISMN and a image plot for other input data.
-    Saves a figure and returns Matplotlib fig and ax objects for further processing.
     
     Parameters
     ----------
@@ -228,10 +225,7 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
 
     for var in varmeta:  # plot all specified variables (usually only one)
         # === plot data ===
-        if varmeta[var]['ds'] in globals.scattered_datasets or varmeta[var]['ref'] in globals.scattered_datasets:  # do scatterplot
-            fig, ax = dfplot.scatterplot(df=df, var=var, meta=varmeta[var], **plot_kwargs)
-        else:
-            fig, ax = dfplot.mapplot(df=df, var=var, meta=varmeta[var], **plot_kwargs)
+        fig, ax = dfplot.mapplot(df=df, var=var, meta=varmeta[var], **plot_kwargs)
 
         # === save ===
         if not out_name:
@@ -246,18 +240,39 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
 
 
 def load(filepath, metric, extent=None, index_names=globals.index_names):
-    "returns DataFrame and varmeta"  # TODO: docstring!
+    """
+    Loads data from *.nc file in filepath and returns it as pandas.DataFrame, including a metadata dictionary.
+
+    Parameters
+    ----------
+    filepath : str
+        path to input file
+    metric : [ str | list ]
+        metric(s) to load
+    extent : list, optional
+        [lon_min,lon_max,lat_min,lat_max] to create a subset of the data
+    index_names : list, optional
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        DataFrame containing the requested data, stripped by nan values and cropped to extent.
+    varmeta : dict
+        Dictionary containing a meta dict for each variable in df.
+    """
     with xr.open_dataset(filepath) as ds:
         if isinstance(metric, str):
             variables = _get_var(ds, metric)
         elif isinstance(metric, list) or isinstance(metric, set):  # metric is a list and already contais the variables to be plotted.
             variables = metric
+        else:
+            raise TypeError('The argument metric must be str or list. {} was given.'.format(type(metric)))
         varmeta = _get_varmeta(ds, variables)
         df = _load_data(ds, variables, extent, index_names)
     return df, varmeta
 
 
-def get_var(filepath, metric=None):
+def get_variables(filepath, metric=None):
     """
     Searches the dataset for variables that contain a 'metric_between' and returns a list of strings.
     Drops vars that contain only nan or null values.

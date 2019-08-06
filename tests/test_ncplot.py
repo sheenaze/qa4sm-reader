@@ -68,14 +68,14 @@ def test__get_dir_name_type():
            ('H:\\MyFolder', 'MyName', {'.png', '.svg', '.pdf'})
 
 
-def test_get_var():  # TODO: rename get_var to get_variables
+def test_get_variables():
     filepath = get_path('ISMN_nan')
     exp_result = ['R_between_6-ISMN_1-C3S',
                   'R_between_6-ISMN_2-SMAP',
                   'R_between_6-ISMN_3-ASCAT',
                   'R_between_6-ISMN_4-ESA_CCI_SM_combined',
                   'R_between_6-ISMN_5-SMOS']
-    assert ncplot.get_var(filepath, 'R') == exp_result
+    assert ncplot.get_variables(filepath, 'R') == exp_result
 
 
 def test_load_data():
@@ -188,7 +188,7 @@ def test_boxplot_GLDAS_options():
     out_dir = get_path('boxplot')
     filepath = get_path('GLDAS')
     out_name = 'test_boxplot_GLDAS_options'
-    variables = ncplot.get_var(filepath, 'R')[:-1]
+    variables = ncplot.get_variables(filepath, 'R')[:-1]
     ncplot.boxplot(filepath, variables, out_dir=out_dir, out_name=out_name,
                    out_type=['png', '.svg'], dpi=300,
                    print_stat=False, add_title=False, watermark_pos='bottom')
@@ -215,28 +215,28 @@ def test_boxplot_GLDAS_nan_extent():
 # === mapplot ===
 def test_mapplot_ISMN_default():
     filepath = get_path('ISMN')
-    var = ncplot.get_var(filepath, 'R')[0]  # take the first var
+    var = ncplot.get_variables(filepath, 'R')[0]  # take the first var
     ncplot.mapplot(filepath, var)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
 
 
 def test_mapplot_ISMN_nan_default():
     filepath = get_path('ISMN_nan')
-    var = ncplot.get_var(filepath, 'rho')[0]  # take the first var
+    var = ncplot.get_variables(filepath, 'rho')[0]  # take the first var
     ncplot.mapplot(filepath, var)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
 
 
 def test_mapplot_GLDAS_default():  # 16
     filepath = get_path('GLDAS')
-    var = ncplot.get_var(filepath, 'R')[0]  # take the first var
+    var = ncplot.get_variables(filepath, 'R')[0]  # take the first var
     ncplot.mapplot(filepath, var)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
 
 
 def test_mapplot_GLDAS_nan_default():  # TODO: find out why it takes fucking 14s to produce a dumb simple plot.
     filepath = get_path('GLDAS_nan')
-    var = ncplot.get_var(filepath, 'rho')[0]  # take the first var
+    var = ncplot.get_variables(filepath, 'rho')[0]  # take the first var
     ncplot.mapplot(filepath, var)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
 
@@ -246,7 +246,7 @@ def test_mapplot_ISMN_extent():
     out_dir = get_path('mapplot')
     out_name = 'mapplot_ISMN_extent'
     out_type = ['png', 'pdf']
-    var = ncplot.get_var(filepath, 'R')[0]  # take the first var
+    var = ncplot.get_variables(filepath, 'R')[0]  # take the first var
     ncplot.mapplot(filepath, var, EXTENT_SCATTER, out_dir, out_name, out_type, map_resolution='50m', add_us_states=True)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
 
@@ -256,7 +256,7 @@ def test_mapplot_GLDAS_extent():  # TODO: find out why it takes fucking 12s to p
     out_dir = get_path('mapplot')
     out_name = 'mapplot_GLDAS_extent'
     out_type = 'png'
-    var = ncplot.get_var(filepath, 'R')[0]  # take the first var
+    var = ncplot.get_variables(filepath, 'R')[0]  # take the first var
     ncplot.mapplot(filepath, var, EXTENT_GRID, out_dir, out_name, out_type, map_resolution='50m')
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
 

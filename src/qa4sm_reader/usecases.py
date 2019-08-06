@@ -7,13 +7,88 @@ __license__ = "mit"
 
 
 '''
-Module description
+Usecase demonstrating the functionality of qa4sm_reader.
+
+The first section deals with ncplot, which contains functions for handling qa4sm output files including metadata.
+The second section deals with dfplot, which contains lower level functions for plotting.
 '''
-# TODO # (+) 
+# === Using qa4sm_reader to generate plots for qa4sm service ===
+if True:
+    import logging
 
-# NOTES #
+    import re
+    from os import path, remove
+    from zipfile import ZipFile
 
-from qa4sm_reader.ncplot import mapplot, get_var, boxplot
+    import matplotlib.pyplot as plt
+    from qa4sm_reader import ncplot, dfplot
+
+    __logger = logging.getLogger(__name__)
+
+    def generate_all_graphs(validataion_run, outfolder):
+        if not validation_run.output_file:
+            return None
+
+        zipfilename = path.join(outfolder, 'graphs.zip')
+        __logger.debug('Trying to create zipfile {}'.format(zipfilename))
+
+        filepath = validation_run.output_file.path  # get filepath from validation run object
+
+        with ZipFile(zipfilename, 'w', ZIP_DEFLATED) as myzip:
+            for metric in ncplot.get_metrics(filepath):  # loop over available metrics
+                # === load data and metadata ===
+                df, varmeta = ncplot.load(filepath, metric)
+
+                # === boxplot ===
+                fig, ax = dfplot.boxplot(df, varmeta)
+
+                # === save ===
+                png_filename = path.join(outfolder, 'boxplot_{}.png'.format(metric))
+                svg_filename = path.join(outfolder, 'boxplot_{}.svg'.format(metric))
+                plt.savefig(png_filename, dpi='figure')
+                plt.savefig(svg_filename)
+                plt.close()
+
+                # === write to zip ===
+                arcname = path.basename(png_filename)
+                myzip.write(png_filename, arcname=arcname)
+                arcname = path.basename(svg_filename)
+                myzip.write(svg_filename, arcname=arcname)
+                remove(svg_filename)  # we don't need the vector image anywhere but in the zip
+
+                for var in ncplot.get_variables(filepath, metric):
+                    # === plot ===
+                    fig, ax = dfplot.mapplot(df, var=var, meta=varmeta[var])
+
+                    # === save ===
+                    ds_match = re.match(r'.*_between_(([0-9]+)-(.*)_([0-9]+)-(.*))', var)
+                    if ds_match:
+                        pair_name = ds_match.group(1)
+                    else:
+                        pair_name = var  # e.g. n_obs
+
+                    if metric == pair_name:  # e.g. n_obs
+                        filename = 'overview_{}'.format(metric)
+                    else:
+                        filename = 'overview_{}_{}'.format(pair_name, metric)
+
+                    png_filename = path.join(outfolder, filename + '.png')
+                    svg_filename = path.join(outfolder, filename + '.svg')
+
+                    plt.savefig(png_filename, dpi='figure')
+                    plt.savefig(svg_filename)
+                    plt.close()
+
+                    # === write to zip ===
+                    arcname = path.basename(png_filename)
+                    myzip.write(png_filename, arcname=arcname)
+                    arcname = path.basename(svg_filename)
+                    myzip.write(svg_filename, arcname=arcname)
+                    remove(svg_filename)  # we don't need the vector image anywhere but in the zip
+
+
+
+from qa4sm_reader.ncplot import mapplot, get_variables, boxplot
 import os
 import cartopy.crs as ccrs
 
@@ -65,7 +140,7 @@ def start_usecase(usecase, store_output=False):
     if usecase == 'map_gldas':
         # map with gldas results, not stored
         filepath = os.path.join(test_dir, 'test_data', testfiles['GLDAS-3'])
-        variable = get_var(filepath, 'rho')[0] #['R_between_5-ISMN_1-C3S']#, 'R_between_5-ISMN_2-SMAP', 'R_between_5-ISMN_3-ASCAT', 'R_between_5-ISMN_4-SMOS']
+        variable = get_variables(filepath, 'rho')[0] #['R_between_5-ISMN_1-C3S']#, 'R_between_5-ISMN_2-SMAP', 'R_between_5-ISMN_3-ASCAT', 'R_between_5-ISMN_4-SMOS']
         themap = mapplot(filepath, variable, out_dir=out_path,
                          watermark_pos='bottom',  #todo: there was a 'format' keyword that did not work
                          projection=ccrs.PlateCarree(), dpi=300,
