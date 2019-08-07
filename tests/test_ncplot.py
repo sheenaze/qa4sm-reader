@@ -234,7 +234,7 @@ def test_mapplot_GLDAS_default():  # 16
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(os.getcwd()))
 
 
-def test_mapplot_GLDAS_nan_default():  # TODO: find out why it takes fucking 14s to produce a dumb simple plot.
+def test_mapplot_GLDAS_nan_default():  # TODO: find out why it takes 14s to produce the plot.
     filepath = get_path('GLDAS_nan')
     var = ncplot.get_variables(filepath, 'rho')[0]  # take the first var
     ncplot.mapplot(filepath, var)
@@ -251,7 +251,7 @@ def test_mapplot_ISMN_extent():
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
 
 
-def test_mapplot_GLDAS_extent():  # TODO: find out why it takes fucking 12s to produce a dumb simple plot.
+def test_mapplot_GLDAS_extent():  # TODO: find out why it takes 12s to produce the plot.
     filepath = get_path('GLDAS')
     out_dir = get_path('mapplot')
     out_name = 'mapplot_GLDAS_extent'
