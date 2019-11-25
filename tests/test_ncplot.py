@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import qa4sm_reader.read
 
 __author__ = "Lukas Racbhauer"
 __copyright__ = "2019, TU Wien, Department of Geodesy and Geoinformation"
@@ -87,7 +87,7 @@ def test_load_data():
     exp_index = [0, 1]
     exp_columns = ['lat', 'lon', 'R_between_6-ISMN_2-SMAP', 'R_between_6-ISMN_3-ASCAT']
     exp_result = pd.DataFrame(exp_data, exp_index, exp_columns)
-    df = ncplot.load_data(filepath, variables, extent=EXTENT_SCATTER)
+    df = qa4sm_reader.read.load_data(filepath, variables, extent=EXTENT_SCATTER)
     assert_frame_equal(df, exp_result)
 
 
@@ -153,7 +153,7 @@ def test_load():
                        'ds_version': 'ESA_CCI_SM_C_V04_4', 'ds_version_pretty_name': 'v04.4',
                        'ref_pretty_name': 'ISMN', 'ref_version': 'ISMN_V20180712_TEST',
                        'ref_version_pretty_name': '20180712 testset'}}
-    df, varmeta = ncplot.load(filepath, metric, extent=EXTENT_SCATTER)
+    df, varmeta = qa4sm_reader.read.load(filepath, metric, extent=EXTENT_SCATTER)
     assert varmeta == exp_varmeta
     assert_frame_equal(df, exp_df)
 

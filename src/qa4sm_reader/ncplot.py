@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import qa4sm_reader.plot
 
 __author__ = "Lukas Racbhauer"
 __copyright__ = "2019, TU Wien, Department of Geodesy and Geoinformation"
@@ -31,14 +31,13 @@ varmeta : dict
 Internally, xarray is used to open the NetCDF files.
 """
 
-from qa4sm_reader import dfplot
 from qa4sm_reader import globals
 import xarray as xr
 import matplotlib.pyplot as plt
 import re
 import os
+#from qa4sm_reader.read import load, _get_var, _get_varmeta, _get_meta
 
-import warnings
 
 # === File level ===
 
@@ -93,7 +92,7 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
         df, varmeta = load(filepath, metric, extent)
 
         # === boxplot ===
-        fig, ax = dfplot.boxplot(df, varmeta, **boxplot_kwargs)
+        fig, ax = qa4sm_reader.plot.boxplot(df, varmeta, **boxplot_kwargs)
 
         # === save ===
         curr_dir = os.path.join(out_dir, metric)
@@ -112,7 +111,7 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png', 
         for var in varmeta:
             meta = varmeta[var]
             # === plot ===
-            fig, ax = dfplot.mapplot(df, var=var, meta=meta, **mapplot_kwargs)
+            fig, ax = qa4sm_reader.plot.mapplot(df, var=var, meta=meta, **mapplot_kwargs)
 
             # === save ===
             ds_match = re.match(r'.*_between_(([0-9]+)-(.*)_([0-9]+)-(.*))', var)
@@ -181,7 +180,7 @@ def boxplot(filepath, metric, extent=None, out_dir=None, out_name=None, out_type
     df, varmeta = load(filepath, metric, extent)
 
     # === plot data ===
-    fig, ax = dfplot.boxplot(df=df, varmeta=varmeta, **plot_kwargs)
+    fig, ax = qa4sm_reader.plot.boxplot(df=df, varmeta=varmeta, **plot_kwargs)
 
     # === save ===
     if not out_name:
@@ -245,7 +244,7 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
     for var in varmeta:  # plot all specified variables (usually only one)
         meta = varmeta[var]
         # === plot data ===
-        fig, ax = dfplot.mapplot(df=df, var=var, meta=meta, **plot_kwargs)
+        fig, ax = qa4sm_reader.plot.mapplot(df=df, var=var, meta=meta, **plot_kwargs)
 
         # === save ===
         if not out_name:
@@ -270,39 +269,6 @@ def mapplot(filepath, var, extent=None, out_dir=None, out_name=None, out_type=No
     return fnames
 
 
-def load(filepath, metric, extent=None, index_names=globals.index_names):
-    """
-    Loads data from *.nc file in filepath and returns it as pandas.DataFrame, including a metadata dictionary.
-
-    Parameters
-    ----------
-    filepath : str
-        path to input file
-    metric : [ str | list ]
-        metric(s) to load
-    extent : list, optional
-        [lon_min,lon_max,lat_min,lat_max] to create a subset of the data
-    index_names : list, optional
-
-    Returns
-    -------
-    df : pandas.DataFrame
-        DataFrame containing the requested data, stripped by nan values and cropped to extent.
-    varmeta : dict
-        Dictionary containing a meta dict for each variable in df.
-    """
-    with xr.open_dataset(filepath) as ds:
-        if isinstance(metric, str):
-            variables = _get_var(ds, metric)
-        elif isinstance(metric, list) or isinstance(metric, set):  # metric is a list and already contais the variables to be plotted.
-            variables = metric
-        else:
-            raise TypeError('The argument metric must be str or list. {} was given.'.format(type(metric)))
-        varmeta = _get_varmeta(ds, variables)
-        df = _load_data(ds, variables, extent, index_names)
-    return df, varmeta
-
-
 def get_variables(filepath, metric=None):
     """
     Searches the dataset for variables that contain a 'metric_between' and returns a list of strings.
@@ -320,63 +286,6 @@ def get_variables(filepath, metric=None):
     with xr.open_dataset(filepath) as ds:
         variables = _get_var(ds, metric)
     return variables
-
-
-def _get_var(ds, metric):
-    """"
-    Searches the dataset for variables that contain a '<metric>_between' and returns a list of strings.
-    Drop vars that contain only nan or null values.
-    """
-    # TODO: change to set instead of list
-    if metric == 'n_obs':  # n_obs is a special case, that does not match the usual pattern with *_between*
-        return [metric]
-    else:
-        variables = [var for var in ds if ~ds[var].isnull().all()]  # reject all nan and null values.
-        if metric:  # usual case.
-            return [var for var in variables if re.search(r'^{}_between'.format(metric), var, re.I)]  # search for pattern.
-        else:  # metric is None, return all variables that contain '_between'
-            return [var for var in variables if (re.search(r'_between', var, re.I) or var == 'n_obs')]  # search for pattern.
-
-
-def load_data(filepath, variables, extent=None, index_names=globals.index_names):
-    """
-    Loads requested Data from the NetCDF file.
-
-    Parameters
-    ----------
-    filepath : str
-    variables
-    extent : list
-        [lon_min,lon_max,lat_min,lat_max] to create a subset of the data
-    index_names : list [optional]
-        defaults to globals.index_names = ['lat', 'lon']
-
-    Returns
-    -------
-    df : pandas.DataFrame
-        DataFrame containing the requested data.
-    """
-    with xr.open_dataset(filepath) as ds:
-        df = _load_data(ds, variables, extent, index_names)
-    return df
-
-
-def _load_data(ds, variables, extent, index_names):
-    """
-    converts xarray.DataSet to pandas.DataFrame, reading only relevant variables and multiindex
-    """
-    if type(variables) is str: variables = [variables]  # convert to list of string
-    try:
-        df = ds[index_names + variables].to_dataframe()
-    except KeyError as e:
-        raise Exception(
-            'The given variabes ' + ', '.join(variables) + ' do not match the names in the input data.' + str(e))
-    df.dropna(axis='index', subset=variables, inplace=True)
-    if extent:  # === geographical subset ===
-        lat, lon = globals.index_names
-        df = df[(df[lon] >= extent[0]) & (df[lon] <= extent[1]) & (df[lat] >= extent[2]) & (df[lat] <= extent[3])]
-    df.reset_index(drop=True, inplace=True)
-    return df
 
 
 def get_meta(filepath, var):
@@ -417,84 +326,12 @@ def _get_pretty_name(ds, name, number):
     return pretty_name, version, version_pretty_name
 
 
-def _get_meta(ds, var):
-    """
-    parses the var name and gets metadata from tha *.nc dataset.
-    checks consistency between the dataset and the variable name.
-    """
-    # === consistency with dataset ===
-    if not var in ds.data_vars:
-        raise Exception('The given var \'{}\' is not contained in the dataset.'.format(var))
-    # === parse var ===
-    meta = dict()
-    try:
-        pattern = re.compile(
-            r"""(\D+)_between_(\d+)-(\S+)_(\d+)-(\S+)""")  # 'ubRMSD_between_4-ISMN_3-ESA_CCI_SM_combined'
-        match = pattern.match(var)
-        meta['metric'] = match.group(1)
-        meta['ref_no'] = int(match.group(2))
-        meta['ref'] = match.group(3)
-        meta['ds_no'] = int(match.group(4))
-        meta['ds'] = match.group(5)
-    except AttributeError:
-        if var == 'n_obs':  # catch error occurring when var is 'n_obs'
-            meta['metric'] = 'n_obs'
-            datasets = {}
-            i = 1  # numbers as in meta and var. In Attributes, it is numbers-1
-            while True:
-                try:
-                    datasets[i] = ds.attrs['val_dc_dataset' + str(i - 1)]
-                    i += 1
-                except KeyError:
-                    break
-            try:
-                meta['ref_no'] = int(ds.attrs['val_ref'][-1])  # last character of string is reference number
-                meta['ref'] = ds.attrs[ds.attrs['val_ref']]  # e.g. val_ref = "val_dc_dataset3"
-            except KeyError:  # for some reason, the attribute lookup failed. Fall back to the last element in dict
-                meta['ref_no'] = list(datasets)[-1]
-                meta['ref'] = datasets[meta['ref_no']]
-            datasets.pop(meta['ref_no'])
-            meta['ds_no'] = list(datasets.keys())  # list instead of int
-            meta['ds'] = [datasets[i] for i in meta['ds_no']]  # list instead of str
-        else:
-            raise Exception('The given var \'{}\' does not match the regex pattern.'.format(var))
-    # === get pretty names ===
-    for i in ('ds', 'ref'):
-        name = meta[i]
-        number = meta[i + '_no']
-        if (type(name) == list) and (
-                type(number) == list):  # e.g. ds of n_obs are several: the rest needs to be list as well
-            meta[i + '_pretty_name'] = list()
-            meta[i + '_version'] = list()
-            meta[i + '_version_pretty_name'] = list()
-            for na, no in zip(name, number):
-                pretty_name, version, version_pretty_name = _get_pretty_name(ds, na, no)
-                meta[i + '_pretty_name'].append(pretty_name)
-                meta[i + '_version'].append(version)
-                meta[i + '_version_pretty_name'].append(version_pretty_name)
-        else:  # usual case.
-            pretty_name, version, version_pretty_name = _get_pretty_name(ds, name, number)
-            meta[i + '_pretty_name'] = pretty_name
-            meta[i + '_version'] = version
-            meta[i + '_version_pretty_name'] = version_pretty_name
-    return meta
-
-
 def get_varmeta(filepath, variables=None):
     """
     get meta for all variables and return a nested dict.
     """
     with xr.open_dataset(filepath) as ds:
         return _get_varmeta(ds, variables)
-
-
-def _get_varmeta(ds, variables=None):
-    """
-    get meta for all variables and return a nested dict.
-    """
-    if not variables:  # get all variables.
-        variables = _get_var(ds, metric=None)
-    return {var: _get_meta(ds, var) for var in variables}
 
 
 def _get_dir_name_type(out_dir, out_name, out_type):

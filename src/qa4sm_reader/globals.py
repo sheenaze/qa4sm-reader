@@ -44,6 +44,12 @@ watermark_pos = 'top'  # Default position ('top' or 'bottom')
 watermark_fontsize = 10  # fontsize in points (matplotlib uses 72ppi)
 watermark_pad = 5  # padding above/below watermark in points (matplotlib uses 72ppi)
 
+# === filename template ===
+fn_templ = "{ds}.{var}"
+fn_sep = "_with_"
+# === variable template ===
+basic_var_format = "{metric}_between_{dataset1}_and_{dataset2}"
+tc_var_format = "{metric}_{dataset}_between_{dataset1}_and_{dataset2}_and_{dataset3}"
 # === colormaps used for plotting metrics ===
 # Colormaps can be set for classes of similar metrics or individually for metrics.
 # Any colormap name can be used, that works with matplotlib.pyplot.cm.get_cmap('colormap')
@@ -56,6 +62,10 @@ _cclasses = {
     'seq_worse': 'cet_CET_L4_r',  # sequential: increasing value bad (p_R, p_rho, rmsd, ubRMSD, RSS):
     'seq_better': 'cet_CET_L4'  # sequential: increasing value good (n_obs)
 }
+
+metric_groups = {'basic' : ['R', 'p_R', 'rho','p_rho','rmsd','bias','n_obs',
+                            'ubRMSD','mse', 'mse_corr', 'mse_bias', 'mse_var',
+                            'RSS', 'tau', 'p_tau']}
 
 _colormaps = {  # from /qa4sm/validator/validation/graphics.py
     'R': _cclasses['div_better'],
@@ -162,5 +172,7 @@ _dataset_version_pretty_names = {  # from qa4sm\validator\fixtures\versions.json
     "ESA_CCI_SM_C_V04_4": "v04.4",
     "SMOS_105_ASC": "V.105 Ascending",
     "ERA5_test": "ERA5 test",
-    "ERA5": "ERA5"
+    "ERA5": "ERA5",
+    "ERA5_LAND" : "ERA5-Land",
+    "ERA5_LAND_TEST": "ERA5-Land Test"
 }

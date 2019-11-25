@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-
+import qa4sm_reader.plot
+import qa4sm_reader.read
 
 __author__ = "Lukas Racbhauer, Wolfgang Preimesberger"
 __copyright__ = "2019, TU Wien, Department of Geodesy and Geoinformation"
@@ -120,12 +121,12 @@ def df_qa4sm_integration():
         with ZipFile(zipfilename, 'w', ZIP_DEFLATED) as myzip:
             for metric in ncplot.get_metrics(filepath):  # loop over available metrics
                 # === load data and metadata ===
-                df, varmeta = ncplot.load(filepath, metric)
+                df, varmeta = qa4sm_reader.read.load(filepath, metric)
                 # df is a pandas.DataFrame containing the variables and lat/lon as rows.
                 # varmeta is a dict, containing the variables as keys and a metadata dictionary as values.
 
                 # === boxplot ===
-                fig, ax = dfplot.boxplot(df, varmeta)
+                fig, ax = qa4sm_reader.plot.boxplot(df, varmeta)
 
                 # === save ===
                 png_filename = path.join(outfolder, 'boxplot_{}.png'.format(metric))
@@ -143,7 +144,7 @@ def df_qa4sm_integration():
 
                 for var in varmeta:  # ncplot.get_variables(filepath, metric):
                     # === plot ===
-                    fig, ax = dfplot.mapplot(df, var=var, meta=varmeta[var])
+                    fig, ax = qa4sm_reader.plot.mapplot(df, var=var, meta=varmeta[var])
 
                     # === save ===
                     ds_match = re.match(r'.*_between_(([0-9]+)-(.*)_([0-9]+)-(.*))', var)
