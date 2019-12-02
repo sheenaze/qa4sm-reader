@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import qa4sm_reader.plot
 import qa4sm_reader.read
 
 __author__ = "Lukas Racbhauer"
@@ -97,7 +98,7 @@ def test_get_varmeta():
     exp_result = {'R_between_3-ISMN_1-C3S':
                       {'metric': 'R',
                        'ref_no': 3, 'ref': 'ISMN',
-                       'ds_no': 1, 'ds': 'C3S', 'ds_pretty_name': 'C3S',
+                       'ds_no': 1, 'ds': 'C3S', 'short_to_pretty': 'C3S',
                        'ds_version': 'C3S_V201812', 'ds_version_pretty_name': 'v201812',
                        'ref_pretty_name': 'ISMN', 'ref_version': 'ISMN_V20180712_TEST',
                        'ref_version_pretty_name': '20180712 testset'},
@@ -105,7 +106,7 @@ def test_get_varmeta():
                       {'metric': 'R',
                        'ref_no': 3, 'ref': 'ISMN',
                        'ds_no': 2, 'ds': 'ESA_CCI_SM_combined',
-                       'ds_pretty_name': 'ESA CCI SM combined',
+                       'short_to_pretty': 'ESA CCI SM combined',
                        'ds_version': 'ESA_CCI_SM_C_V04_4', 'ds_version_pretty_name': 'v04.4',
                        'ref_pretty_name': 'ISMN', 'ref_version': 'ISMN_V20180712_TEST',
                        'ref_version_pretty_name': '20180712 testset'}}
@@ -115,7 +116,7 @@ def test_get_varmeta():
 def test_get_meta():
     filepath = get_path('ISMN')
     var = 'R_between_3-ISMN_1-C3S'
-    exp_result = {'metric': 'R', 'ref_no': 3, 'ref': 'ISMN', 'ds_no': 1, 'ds': 'C3S', 'ds_pretty_name': 'C3S',
+    exp_result = {'metric': 'R', 'ref_no': 3, 'ref': 'ISMN', 'ds_no': 1, 'ds': 'C3S', 'short_to_pretty': 'C3S',
                   'ds_version': 'C3S_V201812', 'ds_version_pretty_name': 'v201812', 'ref_pretty_name': 'ISMN',
                   'ref_version': 'ISMN_V20180712_TEST', 'ref_version_pretty_name': '20180712 testset'}
     assert ncplot.get_meta(filepath, var) == exp_result
@@ -141,7 +142,7 @@ def test_load():
     exp_varmeta = {'R_between_3-ISMN_1-C3S':
                       {'metric': 'R',
                        'ref_no': 3, 'ref': 'ISMN',
-                       'ds_no': 1, 'ds': 'C3S', 'ds_pretty_name': 'C3S',
+                       'ds_no': 1, 'ds': 'C3S', 'short_to_pretty': 'C3S',
                        'ds_version': 'C3S_V201812', 'ds_version_pretty_name': 'v201812',
                        'ref_pretty_name': 'ISMN', 'ref_version': 'ISMN_V20180712_TEST',
                        'ref_version_pretty_name': '20180712 testset'},
@@ -149,7 +150,7 @@ def test_load():
                       {'metric': 'R',
                        'ref_no': 3, 'ref': 'ISMN',
                        'ds_no': 2, 'ds': 'ESA_CCI_SM_combined',
-                       'ds_pretty_name': 'ESA CCI SM combined',
+                       'short_to_pretty': 'ESA CCI SM combined',
                        'ds_version': 'ESA_CCI_SM_C_V04_4', 'ds_version_pretty_name': 'v04.4',
                        'ref_pretty_name': 'ISMN', 'ref_version': 'ISMN_V20180712_TEST',
                        'ref_version_pretty_name': '20180712 testset'}}
@@ -263,6 +264,6 @@ def test_mapplot_GLDAS_extent():  # TODO: find out why it takes 12s to produce t
 
 def test_plot_all_extent():
     filepath = get_path('GLDAS')
-    ncplot.plot_all(filepath, metrics={'n_obs', 'R', 'ubRMSD'}, extent=EXTENT_GRID,
-                    boxplot_kwargs={'watermark_pos': None}, mapplot_kwargs={'dpi': 70})
+    qa4sm_reader.plot.plot_all(filepath, metrics={'n_obs', 'R', 'ubRMSD'}, extent=EXTENT_GRID,
+                               boxplot_kwargs={'watermark_pos': None}, mapplot_kwargs={'dpi': 70})
     warnings.warn('Test does not assert output images.')

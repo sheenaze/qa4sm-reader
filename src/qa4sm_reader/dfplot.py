@@ -11,7 +11,6 @@ Contains plotting routines that take pd.DataFrames and metadata dictionaries
 as input and return figure and axes objects.
 """
 
-
 from qa4sm_reader import globals
 
 import numpy as np
@@ -38,7 +37,6 @@ def _float_gcd(a, b, atol=1e-08):
         a, b = b, a % b
     return a
 
-
 def _get_grid(a):
     "Find the stepsize of the grid behind a and return the parameters for that grid axis."
     a = np.unique(a)  # get unique values and sort
@@ -51,11 +49,9 @@ def _get_grid(a):
     len_a = int((a_max - a_min) / da + 1)
     return a_min, a_max, da, len_a
 
-
 def _value2index(a, a_min, da):
     "Return the indexes corresponding to a. a and the returned index is a numpy array."
     return ((a - a_min) / da).astype('int')
-
 
 def geotraj_to_geo2d(df, var, index=globals.index_names):
     """
@@ -263,7 +259,6 @@ def get_extend_cbar(metric):
     -------
     str
         one of ['neither', 'min', 'max', 'both'].
-
     """
     vrange = globals._metric_value_ranges[metric]
     if vrange[0] is None:
@@ -302,7 +297,7 @@ def _make_title(ax, meta=None, title=None, title_pad=globals.title_pad):
             title = 'Comparing {0} ({1}) to {2} ({3})'.format(
                 meta['ref_pretty_name'],
                 meta['ref_version_pretty_name'],
-                meta['ds_pretty_name'],
+                meta['short_to_pretty'],
                 meta['ds_version_pretty_name'])
         except TypeError:
             raise Exception('Either \'meta\' or \'title\' need to be specified!')

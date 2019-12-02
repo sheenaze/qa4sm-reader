@@ -45,11 +45,9 @@ watermark_fontsize = 10  # fontsize in points (matplotlib uses 72ppi)
 watermark_pad = 5  # padding above/below watermark in points (matplotlib uses 72ppi)
 
 # === filename template ===
-fn_templ = "{ds}.{var}"
-fn_sep = "_with_"
-# === variable template ===
-basic_var_format = "{metric}_between_{dataset1}_and_{dataset2}"
-tc_var_format = "{metric}_{dataset}_between_{dataset1}_and_{dataset2}_and_{dataset3}"
+ds_fn_templ = "{i}-{ds}.{var}"
+ds_fn_sep = "_with_"
+
 # === colormaps used for plotting metrics ===
 # Colormaps can be set for classes of similar metrics or individually for metrics.
 # Any colormap name can be used, that works with matplotlib.pyplot.cm.get_cmap('colormap')
@@ -63,9 +61,21 @@ _cclasses = {
     'seq_better': 'cet_CET_L4'  # sequential: increasing value good (n_obs)
 }
 
-metric_groups = {'basic' : ['R', 'p_R', 'rho','p_rho','rmsd','bias','n_obs',
-                            'ubRMSD','mse', 'mse_corr', 'mse_bias', 'mse_var',
-                            'RSS', 'tau', 'p_tau']}
+# 0=common metrics, 2=paired metrics (2 datasets), 3=triple metrics (TC)
+metric_groups = {0 : ['n_obs'],
+                 2 : ['R', 'p_R', 'rho','p_rho','rmsd', 'bias',
+                      'ubRMSD','mse', 'mse_corr', 'mse_bias', 'mse_var',
+                      'RSS', 'tau', 'p_tau'],
+                 3 : ['snr', 'err_std', 'beta']}
+
+# === variable template ===
+# how the metric is separated from the rest
+var_name_metric_sep = {0: "{metric}", 2: "{metric}_between_",
+                       3: "{metric}_{id0}-{dataset}_between_"}
+# how two datasets are separated
+var_name_ds_sep = {0: None, 2: "{id1}-{dataset1}_and_{id2}-{dataset2}",
+                   3: "{id1}-{dataset1}_and_{id2}-{dataset2}_and_{id3}-{dataset3}"}
+
 
 _colormaps = {  # from /qa4sm/validator/validation/graphics.py
     'R': _cclasses['div_better'],
@@ -80,7 +90,16 @@ _colormaps = {  # from /qa4sm/validator/validation/graphics.py
     'mse_corr': _cclasses['seq_worse'],
     'mse_bias': _cclasses['seq_worse'],
     'mse_var': _cclasses['seq_worse'],
+    'RSS' : _cclasses['seq_worse'],
+    'tau' :_cclasses['div_better'],
+    'p_tau' : _cclasses['seq_worse'],
+    'snr': _cclasses['div_better'],
+    'err_std': _cclasses['div_neutr'],
+    'beta': _cclasses['div_neutr'],
 }
+# check if every metric has a colormap
+for group in metric_groups.keys():
+    assert all([m in _colormaps.keys() for m in metric_groups[group]])
 
 # Value ranges of metrics
 _metric_value_ranges = {  # from /qa4sm/validator/validation/graphics.py
@@ -97,7 +116,14 @@ _metric_value_ranges = {  # from /qa4sm/validator/validation/graphics.py
     'mse_corr': [0, None],  # mse_corr only positive
     'mse_bias': [0, None],  # mse_bias only positive
     'mse_var': [0, None],  # mse_var only positive
+    'snr': [None, None],  # mse_var only positive
+    'err_std': [None, None],  # mse_var only positive
+    'beta': [None, None],  # mse_var only positive
 }
+
+# check if every metric has a colormap
+for group in metric_groups.keys():
+    assert all([m in _colormaps.keys() for m in metric_groups[group]])
 
 # label format for all metrics
 _metric_description = {  # from /qa4sm/validator/validation/graphics.py
@@ -105,6 +131,8 @@ _metric_description = {  # from /qa4sm/validator/validation/graphics.py
     'p_R': '',
     'rho': '',
     'p_rho': '',
+    'tau': '',
+    'p_tau': '',
     'rmsd': r' in ${}$',
     'bias': r' in ${}$',
     'n_obs': '',
@@ -114,7 +142,17 @@ _metric_description = {  # from /qa4sm/validator/validation/graphics.py
     'mse_corr': r' in $({})^2$',
     'mse_bias': r' in $({})^2$',
     'mse_var': r' in $({})^2$',
+    'snr': r' in $({})$',
+    'err_std': r' in $({})$',
+    'beta': r' in $({})$',
 }
+
+_ref_ds_attr = 'val_ref' # global variable that defines the reference set
+_ds_short_name_attr = 'val_dc_dataset{:d}' # attribute convention for other datasets
+_ds_pretty_name_attr = 'val_dc_dataset_pretty_name{:d}' # attribute convention for other datasets
+_version_short_name_attr = 'val_dc_version{:d}' # attribute convention for other datasets
+_version_pretty_name_attr = 'val_dc_version_pretty_name{:d}' # attribute convention for other datasets
+
 
 # units for all datasets
 _metric_units = {  # from /qa4sm/validator/validation/graphics.py
@@ -124,6 +162,7 @@ _metric_units = {  # from /qa4sm/validator/validation/graphics.py
     'ASCAT': r'percentage of saturation',
     'SMAP': r'm^3 m^{-3}',
     'ERA5': r'm^3 m^{-3}',
+    'ERA5_LAND': r'm^3 m^{-3}',
     'ESA_CCI_SM_combinded': r'',
     'SMOS': r''
 }
@@ -139,10 +178,15 @@ _metric_name = {  # from /qa4sm/validator/validation/globals.py
     'n_obs': '# observations',
     'ubRMSD': 'Unbiased root-mean-square deviation',
     'RSS': 'Residual sum of squares',
+    'tau': 'Kendall rank correlation',
+    'p_tau': 'Kendall tau p-value',
     'mse': 'Mean square error',
     'mse_corr': 'Mean square error correlation',
     'mse_bias': 'Mean square error bias',
     'mse_var': 'Mean square error variance',
+    'snr': 'Signal-to-noise ratio',
+    'err_std': 'Error standard deviation',
+    'beta': 'TC scaling coefficient',
 }
 
 # === pretty names for datasets ===
@@ -154,6 +198,7 @@ _dataset_pretty_names = {  # from qa4sm\validator\fixtures\datasets.json
     'ASCAT': r'H-SAF ASCAT SSM CDR',
     'SMAP': r'SMAP level 3',
     'ERA5': r'ERA5',
+    'ERA5_LAND': r'ERA5-Land',
     'ESA_CCI_SM_combined': r'ESA CCI SM combined',
     'SMOS': r'SMOS IC'
 }
