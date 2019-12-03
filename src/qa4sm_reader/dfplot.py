@@ -297,7 +297,7 @@ def _make_title(ax, meta=None, title=None, title_pad=globals.title_pad):
             title = 'Comparing {0} ({1}) to {2} ({3})'.format(
                 meta['ref_pretty_name'],
                 meta['ref_version_pretty_name'],
-                meta['short_to_pretty'],
+                meta['ds_pretty_name'],
                 meta['ds_version_pretty_name'])
         except TypeError:
             raise Exception('Either \'meta\' or \'title\' need to be specified!')

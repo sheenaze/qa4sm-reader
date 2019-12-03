@@ -71,8 +71,9 @@ def mapplot(df, var, meta, title=None, label=None, plot_extent=None,
     fig, ax, cax = init_plot(figsize, dpi, add_cbar, projection)
 
     if not colormap:
-        colormap = globals._colormaps[meta['metric']]
-    cmap = plt.cm.get_cmap(colormap)
+        #colormap = globals._colormaps[meta['metric']]
+        cmap = globals._colormaps[meta['metric']]
+    #cmap = plt.cm.get_cmap(colormap)
 
     # === scatter or mapplot ===
     if (meta['ds'] in globals.scattered_datasets or

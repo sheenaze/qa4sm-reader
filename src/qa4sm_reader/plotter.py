@@ -178,7 +178,7 @@ class QA4SM_MetaImg_Plotter(QA4SM_MetaImg):
         out_type = {ext if ext[0] == "." else "." + ext for ext in out_type}  # make sure all entries start with a '.'
         return out_dir, out_name, out_type
 
-    def boxplot(self, metrics, extent=None, out_dir=None, out_name=None, out_type=None,
+    def boxplot(self, metric, extent=None, out_dir=None, out_name=None, out_type=None,
                 **plot_kwargs):
         """
         Creates a boxplot, displaying the variables corresponding to given metric.
@@ -188,9 +188,9 @@ class QA4SM_MetaImg_Plotter(QA4SM_MetaImg):
         ----------
         filepath : str
             Path to the *.nc file to be processed.
-        metrics : list or str or 'all'
+        metric : str
             metric that is collected from the file for all datasets and combined
-            into one plot, if 'all' is passed, all plots are created.
+            into one plot.
         extent : list
             [x_min,x_max,y_min,y_max] to create a subset of the data
         out_dir : [ None | str ], optional
@@ -216,33 +216,25 @@ class QA4SM_MetaImg_Plotter(QA4SM_MetaImg):
         ax : matplotlib.axes.Axes or list of Axes objects
             Axes or list of axes containing the plot.
         """
-        if isinstance(metrics, str):
-            if metrics == 'all':
-                metrics = self.metrics_in_file(group=False)
-            else:
-                metrics = [metrics]
-
         fnames = list()  # list to store all filenames.
+        # === load data and metadata ===
+        df, varmeta = self.load_metric_and_meta(metric, extent)
 
-        for metric in metrics:
-            # === load data and metadata ===
-            df, varmeta = self.load_metric_and_meta(metric, extent)
+        # === plot data ===
+        fig, ax = boxplot(df=df, varmeta=varmeta, **plot_kwargs)
 
-            # === plot data ===
-            fig, ax = boxplot(df=df, varmeta=varmeta, **plot_kwargs)
-
-            # === save ===
-            if not out_name:
-                out_name = 'boxplot_{}'.format(metric)
-            out_dir, out_name, out_type = self._get_dir_name_type(out_dir, out_name,
-                                                                  out_type)
-            if not os.path.exists(out_dir):
-                os.makedirs(out_dir)
-            for ending in out_type:
-                fname = os.path.join(out_dir, out_name+ending)
-                plt.savefig(fname, dpi='figure')
-                fnames.append(fname)
-            plt.close()
+        # === save ===
+        if not out_name:
+            out_name = 'boxplot_{}'.format(metric)
+        out_dir, out_name, out_type = self._get_dir_name_type(out_dir, out_name,
+                                                              out_type)
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
+        for ending in out_type:
+            fname = os.path.join(out_dir, out_name+ending)
+            plt.savefig(fname, dpi='figure')
+            fnames.append(fname)
+        plt.close()
         return fnames
 
 
@@ -290,7 +282,8 @@ class QA4SM_MetaImg_Plotter(QA4SM_MetaImg):
             variables = [var]  # raise IOError('var needs to be a string, not {}.'.format(type(var)))
 
         # === Get ready... ===
-        df, varmeta = self._ds2df(var, extent)
+        df = self._ds2df(var, extent)
+        varmeta = self.meta_get_varmeta([var])
 
         for var in varmeta:  # plot all specified variables (usually only one)
             meta = varmeta[var]
@@ -320,10 +313,18 @@ class QA4SM_MetaImg_Plotter(QA4SM_MetaImg):
         return fnames
 
 if __name__ == '__main__':
-    afile = r"H:\code\qa4sm-reader\tests\test_data\3-GLDAS.SoilMoi0_10cm_inst_with_1-C3S.sm_with_2-ESA_CCI_SM_combined.sm.nc"
+    #afile = r"H:\code\qa4sm-reader\tests\test_data\3-GLDAS.SoilMoi0_10cm_inst_with_1-C3S.sm_with_2-ESA_CCI_SM_combined.sm.nc"
+    afile = '/home/wolfgang/code/qa4sm-reader/tests/test_data/3-GLDAS.SoilMoi0_10cm_inst_with_1-C3S.sm_with_2-ESA_CCI_SM_combined.sm.nc'
     plotter = QA4SM_MetaImg_Plotter(afile)
-    out_dir = r"C:\Temp\qa4smreader_plots"
-    plotter.boxplot('R', out_dir=out_dir)
-    plotter.boxplot('n_obs', out_dir=out_dir)
+    #out_dir = r"C:\Temp\qa4smreader_plots"
+    out_dir = r"/tmp/qa4sm_plots"
+    metrics = plotter.metrics_in_file(group=False)
+    for metric in metrics:
+        print(metric)
+        #plotter.boxplot(metric, out_dir=out_dir)
+        vars = plotter._vars4metric(metric)
+        for var in vars:
+            plotter.mapplot(var)
+    #plotter.boxplot('n_obs', out_dir=out_dir)
 
 
