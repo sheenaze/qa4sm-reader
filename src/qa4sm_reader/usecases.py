@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import qa4sm_reader.plot
+import qa4sm_reader.plotter
 import qa4sm_reader.read
 
 __author__ = "Lukas Racbhauer, Wolfgang Preimesberger"
@@ -126,7 +127,7 @@ def df_qa4sm_integration():
                 # varmeta is a dict, containing the variables as keys and a metadata dictionary as values.
 
                 # === boxplot ===
-                fig, ax = qa4sm_reader.plot.boxplot(df, varmeta)
+                fig, ax = qa4sm_reader.plotter.boxplot(df, varmeta)
 
                 # === save ===
                 png_filename = path.join(outfolder, 'boxplot_{}.png'.format(metric))

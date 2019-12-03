@@ -68,23 +68,7 @@ class QA4SM_Img(object):
         self.ds = xr.open_dataset(self.filepath)
         self.parameters = list(self.ds.variables.keys())
 
-    def print_info(self):
-        print('File Location:', self.filepath)
-        print('================================================================')
-        print('Variables:\n')
-        print(list(self.ds.variables.keys()))
-        print('================================================================')
-        print('Names from filename:\n')
-        pprint(parse_filename(self.filename))
-        print('================================================================')
-        print('Metrics in file:\n')
-        pprint(self.metrics_in_file())
-        print('================================================================')
-        # print the current file location
-        # print the metrics in the file
-        # print the datasets in the file
-
-    def metrics_in_file(self):
+    def metrics_in_file(self, group=True):
         common, dual, triple, other = [], [], [], []
 
         for n, metrics in globals.metric_groups.items():
@@ -98,10 +82,24 @@ class QA4SM_Img(object):
                     triple.append(metric)
                 elif len(vars) > 0:
                     other.append(metric)
-
-        return {'common': common, 'dual': dual, 'triple': triple, 'other': other}
+        if group:
+            return {'common': common, 'dual': dual, 'triple': triple, 'other': other}
+        else:
+            return common + dual + triple + other
 
     def _var2metric(self, var):
+        """
+        Parameters
+        ----------
+        var : str
+            Variable as in the file
+
+        Returns
+        -------
+        parts : list
+            Parsed variable parts
+
+        """
         if var in globals.metric_groups[0]:
             return var
 
@@ -218,6 +216,32 @@ class QA4SM_MetaImg(QA4SM_Img):
         super(QA4SM_MetaImg, self).__init__(filepath)
         self.global_meta = self.ds.attrs
         self.var_meta = {var: self.ds.variables[var].attrs for var in self.ds.variables}
+
+    def print_info(self):
+        print('File Location:', self.filepath)
+        print('================================================================')
+        print('Names from filename:\n')
+        pprint(parse_filename(self.filename))
+        print('================================================================')
+        print('Metrics in file:\n')
+        pprint(self.metrics_in_file())
+        print('================================================================')
+        print('Variables:\n')
+        print(list(self.ds.variables.keys()))
+        print('================================================================')
+        print('================================================================')
+        print('Metrics from variables:\n')
+        print([self._var2metric(var) for var in self.ds.variables.keys()])
+        print('================================================================')
+        print('Variables from metrics:\n')
+        m_file = self.metrics_in_file()
+        metrics = []
+        for g, m in m_file.items():
+            for i in m: metrics.append(i)
+        print([self._vars4metric(m) for m in metrics])
+        print('================================================================')
+        # print the datasets in the file
+
 
     def num2short(self, num=0):
         attr = globals._ds_short_name_attr.format(num)
@@ -337,7 +361,8 @@ class QA4SM_MetaImg(QA4SM_Img):
 
         Parameters
         ---------
-        vars :
+        vars : list
+            List of variables
         """
         if not vars:  # get all variables.
             vars = self._vars4metric(None)
@@ -471,10 +496,14 @@ if __name__ == '__main__':
     assert pre_vers == tty_vers
 
     short_names = reader.get_short_names() # all short names
-    for var in vars:
-        meta = reader.meta_get_varmeta(var)
+    for var in vars_R + vars_snr:
+        metric = reader._var2metric(var)
+        meta = reader.meta_get_varmeta([var])
+
     reader.print_info()
-    img = reader.load_metric('R')
+
+    img, vars = reader.load_metric('R')
+    df, varmeta = reader.load_metric_and_meta('R')
     #img = reader.load_dataset('ESA_CCI_SM')
 
 # def load_data(filepath, variables, extent=None, index_names=globals.index_names):
