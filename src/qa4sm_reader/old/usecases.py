@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-import qa4sm_reader.plot
+import qa4sm_reader.plot_all
 import qa4sm_reader.plotter
-import qa4sm_reader.read
+import qa4sm_reader.img
 
 __author__ = "Lukas Racbhauer, Wolfgang Preimesberger"
 __copyright__ = "2019, TU Wien, Department of Geodesy and Geoinformation"
@@ -17,7 +17,6 @@ The second section deals with dfplot, which contains lower level functions for p
 
 
 import os
-import cartopy.crs as ccrs
 
 this_dir = os.path.dirname(__file__)
 test_dir = os.path.join(this_dir, '../..', 'tests')
@@ -42,7 +41,7 @@ testfiles = {'ISMN-6':
 # === simple boxplot ===
 def nc_simple_boxplot():
     import os
-    from qa4sm_reader import ncplot
+    from qa4sm_reader.old import ncplot
     infile = os.path.join(data_path, testfiles['GLDAS-3'])
     ncplot.boxplot(infile, 'ubRMSD', out_dir=out_path)  # stores a boxplot showing the metric 'ubRMSD' as png.
 
@@ -51,7 +50,7 @@ def nc_simple_boxplot():
 # plot an overview map for each variable
 def nc_all_mapplots():
     import os
-    from qa4sm_reader import ncplot
+    from qa4sm_reader.old import ncplot
     infile = os.path.join(data_path, testfiles['GLDAS-3'])
     for variable in ncplot.get_variables(infile, 'ubRMSD'):  # loop over all variables containing the metric 'ubRMSD'
         ncplot.mapplot(infile, variable, out_dir=out_path)
@@ -61,12 +60,10 @@ def nc_all_mapplots():
 def nc_qa4sm_integration():
     import logging
 
-    import re
     from os import path, remove
     from zipfile import ZipFile, ZIP_DEFLATED
 
-    import matplotlib.pyplot as plt
-    from qa4sm_reader import ncplot, dfplot
+    from qa4sm_reader.old import ncplot
 
     __logger = logging.getLogger(__name__)
 
@@ -106,7 +103,7 @@ def df_qa4sm_integration():
     from zipfile import ZipFile, ZIP_DEFLATED
 
     import matplotlib.pyplot as plt
-    from qa4sm_reader import ncplot, dfplot
+    from qa4sm_reader.old import ncplot
 
     __logger = logging.getLogger(__name__)
 
@@ -122,7 +119,7 @@ def df_qa4sm_integration():
         with ZipFile(zipfilename, 'w', ZIP_DEFLATED) as myzip:
             for metric in ncplot.get_metrics(filepath):  # loop over available metrics
                 # === load data and metadata ===
-                df, varmeta = qa4sm_reader.read.load(filepath, metric)
+                df, varmeta = qa4sm_reader.img.load(filepath, metric)
                 # df is a pandas.DataFrame containing the variables and lat/lon as rows.
                 # varmeta is a dict, containing the variables as keys and a metadata dictionary as values.
 
@@ -145,7 +142,7 @@ def df_qa4sm_integration():
 
                 for var in varmeta:  # ncplot.get_variables(filepath, metric):
                     # === plot ===
-                    fig, ax = qa4sm_reader.plot.mapplot(df, var=var, meta=varmeta[var])
+                    fig, ax = qa4sm_reader.plotter.mapplot(df, var=var, meta=varmeta[var])
 
                     # === save ===
                     ds_match = re.match(r'.*_between_(([0-9]+)-(.*)_([0-9]+)-(.*))', var)

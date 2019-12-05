@@ -294,11 +294,21 @@ def _make_cbar(fig, im, cax, ds, v_min, v_max, meta, label=None):
 def _make_title(ax, meta=None, title=None, title_pad=globals.title_pad):
     if not title:
         try:
-            title = 'Comparing {0} ({1}) to {2} ({3})'.format(
-                meta['ref_pretty_name'],
-                meta['ref_version_pretty_name'],
-                meta['ds_pretty_name'],
-                meta['ds_version_pretty_name'])
+            if meta['metric'] in globals.metric_groups[3]:
+                title = 'Comparing {0} ({1}) to {2} ({3}) to {4} ({5})'.format(
+                    meta['ref_pretty_name'],
+                    meta['ref_version_pretty_name'],
+                    meta['ds1_pretty_name'],
+                    meta['ds1_version_pretty_name'],
+                    meta['ds2_pretty_name'],
+                    meta['ds2_version_pretty_name']
+                )
+            else:
+                title = 'Comparing {0} ({1}) to {2} ({3})'.format(
+                    meta['ref_pretty_name'],
+                    meta['ref_version_pretty_name'],
+                    meta['ds_pretty_name'],
+                    meta['ds_version_pretty_name'])
         except TypeError:
             raise Exception('Either \'meta\' or \'title\' need to be specified!')
     ax.set_title(title, pad=title_pad)
