@@ -3,7 +3,6 @@ import os
 import re
 
 from matplotlib import pyplot as plt
-
 from qa4sm_reader import globals
 from qa4sm_reader.dfplot import get_value_range, init_plot, get_plot_extent, geotraj_to_geo2d, _make_cbar, _make_title, \
     style_map, make_watermark

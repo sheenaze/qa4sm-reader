@@ -68,6 +68,10 @@ class QA4SM_Img(object):
         self.ds = xr.open_dataset(self.filepath)
         self.parameters = list(self.ds.variables.keys())
 
+    def vars_in_file(self):
+        """ Return a view of variables in the current file """
+        return self.ds.data_vars.keys()
+
     def metrics_in_file(self, group=True):
         common, dual, triple, other = [], [], [], []
 
@@ -241,7 +245,6 @@ class QA4SM_MetaImg(QA4SM_Img):
         print([self._vars4metric(m) for m in metrics])
         print('================================================================')
         # print the datasets in the file
-
 
     def num2short(self, num=0):
         attr = globals._ds_short_name_attr.format(num)
@@ -477,21 +480,22 @@ class QA4SM_MetaImg(QA4SM_Img):
         return df, varmeta
 
 if __name__ == '__main__':
-    afile=r"H:\code\qa4sm-reader\tests\test_data\3-ERA5.swvl1_with_1-SMOS.Soil_Moisture_with_2-SMOS.Soil_Moisture.nc"
+    afile=r"H:\code\qa4sm-reader\tests\test_data\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-SMOS.Soil_Moisture.nc"
     reader = QA4SM_MetaImg(afile)
     reader.print_info()
     metrics_in_file = reader.metrics_in_file()
+    vars_in_file = reader.vars_in_file()
     vars_snr = reader._vars4metric('snr')
     vars_R = reader._vars4metric('R')
 
-    df_R_1 = reader._ds2df(reader._vars4metric('R'), extent=None)
-    meta_R = reader._get_meta('R_between_3-ERA5_and_1-SMOS')
-    meta_beta = reader._get_meta('beta_2-SMOS_between_3-ERA5_and_1-SMOS_and_2-SMOS')
-    df_R, meta_R = reader.load_metric_and_meta('R')
+    df_R = reader._ds2df(reader._vars4metric('R'), extent=None)
+    meta_RMSD = reader._get_meta('RMSD_between_3-ERA5_LAND_and_2-SMOS')
+    meta_R = reader._get_meta('R_between_3-ERA5_LAND_and_2-SMOS')
+    also_df_R, also_meta_R = reader.load_metric_and_meta('R')
 
-    num = reader.short2num('ERA5') # short name to index number
+    num = reader.short2num('ERA5_LAND') # short name to index number
     pre, v1, pre_vers = reader.short_to_pretty(2) # short name to pretty name
-    tty, v2, tty_vers = reader.short_to_pretty('ERA5')
+    tty, v2, tty_vers = reader.short_to_pretty('ERA5_LAND')
     assert pre == tty
     assert pre_vers == tty_vers
 
