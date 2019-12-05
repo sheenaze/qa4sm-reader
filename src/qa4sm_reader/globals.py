@@ -54,11 +54,13 @@ ds_fn_sep = "_with_"
 # more on colormaps: https://matplotlib.org/users/colormaps.html | https://morphocode.com/the-use-of-color-in-maps/
 # colorcet: http://colorcet.pyviz.org/user_guide/Continuous.html
 
+import colorcet
+import matplotlib.pyplot as plt
 _cclasses = {
-    'div_better': 'RdYlBu',  # diverging: 1 good, 0 special, -1 bad (pearson's R, spearman's rho')
-    'div_neutr': 'RdYlGn',  # diverging: zero good, +/- neutral: (bias)
-    'seq_worse': 'cet_CET_L4_r',  # sequential: increasing value bad (p_R, p_rho, rmsd, ubRMSD, RSS):
-    'seq_better': 'cet_CET_L4'  # sequential: increasing value good (n_obs)
+    'div_better': plt.cm.get_cmap('RdYlBu'),  # diverging: 1 good, 0 special, -1 bad (pearson's R, spearman's rho')
+    'div_neutr': plt.cm.get_cmap('RdYlGn'),  # diverging: zero good, +/- neutral: (bias)
+    'seq_worse': colorcet.cm['CET_L4_r'], #'cet_CET_L4_r',  # sequential: increasing value bad (p_R, p_rho, rmsd, ubRMSD, RSS):
+    'seq_better': colorcet.cm['CET_L4'], #'cet_CET_L4'  # sequential: increasing value good (n_obs)
 }
 
 # 0=common metrics, 2=paired metrics (2 datasets), 3=triple metrics (TC)
