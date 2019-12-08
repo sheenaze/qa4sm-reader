@@ -1,18 +1,10 @@
 # -*- coding: utf-8 -*-
 
-
-__author__ = "Lukas Racbhauer"
-__copyright__ = "2019, TU Wien, Department of Geodesy and Geoinformation"
-__license__ = "mit"
-
-
 """
-Settings and global variables collected from different sources. 
+Settings and global variables used in the reading and plotting procedures
 """
-
 
 import cartopy.crs as ccrs
-
 
 # === plot defaults ===
 matplotlib_ppi = 72  # Don't change this, it's a matplotlib convention.
@@ -65,7 +57,7 @@ _cclasses = {
 
 # 0=common metrics, 2=paired metrics (2 datasets), 3=triple metrics (TC)
 metric_groups = {0 : ['n_obs'],
-                 2 : ['R', 'p_R', 'rho','p_rho','RMSD', 'BIAS',
+                 2 : ['R', 'p_R', 'rho','p_rho', 'RMSD', 'BIAS',
                       'urmsd', 'mse', 'mse_corr', 'mse_bias', 'mse_var',
                       'RSS', 'tau', 'p_tau'],
                  3 : ['snr', 'err_std', 'beta']}
@@ -77,6 +69,13 @@ var_name_metric_sep = {0: "{metric}", 2: "{metric}_between_",
 # how two datasets are separated
 var_name_ds_sep = {0: None, 2: "{id1}-{dataset1}_and_{id2}-{dataset2}",
                    3: "{id1}-{dataset1}_and_{id2}-{dataset2}_and_{id3}-{dataset3}"}
+
+
+_ref_ds_attr = 'val_ref' # global meta data variable that links to the reference dc
+_ds_short_name_attr = 'val_dc_dataset{:d}' # attribute convention for other datasets
+_ds_pretty_name_attr = 'val_dc_dataset_pretty_name{:d}' # attribute convention for other datasets
+_version_short_name_attr = 'val_dc_version{:d}' # attribute convention for other datasets
+_version_pretty_name_attr = 'val_dc_version_pretty_name{:d}' # attribute convention for other datasets
 
 
 _colormaps = {  # from /qa4sm/validator/validation/graphics.py
@@ -144,17 +143,10 @@ _metric_description = {  # from /qa4sm/validator/validation/graphics.py
     'mse_corr': r' in $({})^2$',
     'mse_bias': r' in $({})^2$',
     'mse_var': r' in $({})^2$',
-    'snr': r' in $({})$',
+    'snr': r' in $(dB)$',
     'err_std': r' in $({})$',
     'beta': r' in $({})$',
 }
-
-_ref_ds_attr = 'val_ref' # global variable that defines the reference set
-_ds_short_name_attr = 'val_dc_dataset{:d}' # attribute convention for other datasets
-_ds_pretty_name_attr = 'val_dc_dataset_pretty_name{:d}' # attribute convention for other datasets
-_version_short_name_attr = 'val_dc_version{:d}' # attribute convention for other datasets
-_version_pretty_name_attr = 'val_dc_version_pretty_name{:d}' # attribute convention for other datasets
-
 
 # units for all datasets
 _metric_units = {  # from /qa4sm/validator/validation/graphics.py
@@ -165,8 +157,10 @@ _metric_units = {  # from /qa4sm/validator/validation/graphics.py
     'SMAP': r'm^3 m^{-3}',
     'ERA5': r'm^3 m^{-3}',
     'ERA5_LAND': r'm^3 m^{-3}',
-    'ESA_CCI_SM_combinded': r'',
-    'SMOS': r''
+    'ESA_CCI_SM_active': r'percentage of saturation',
+    'ESA_CCI_SM_combinded': r'm^3 m^{-3}',
+    'ESA_CCI_SM_passive': r'm^3 m^{-3}',
+    'SMOS': r'm^3 m^{-3}',
 }
 
 # label name for all metrics
@@ -192,7 +186,7 @@ _metric_name = {  # from /qa4sm/validator/validation/globals.py
 }
 
 # === pretty names for datasets ===
-# Note: ncplot.get_meta tries to retrieve pretty names from the global attributes and falls back to here.
+# fallback for dataset pretty names in case they are not in the metadata
 _dataset_pretty_names = {  # from qa4sm\validator\fixtures\datasets.json
     'ISMN': r'ISMN',
     'C3S': r'C3S',
@@ -201,25 +195,36 @@ _dataset_pretty_names = {  # from qa4sm\validator\fixtures\datasets.json
     'SMAP': r'SMAP level 3',
     'ERA5': r'ERA5',
     'ERA5_LAND': r'ERA5-Land',
+    'ESA_CCI_SM_active': r'ESA CCI SM active',
     'ESA_CCI_SM_combined': r'ESA CCI SM combined',
+    'ESA_CCI_SM_passive': r'ESA CCI SM passive',
     'SMOS': r'SMOS IC'
 }
 
+# fallback for dataset version pretty names in case they are not in the metadata
 _dataset_version_pretty_names = {  # from qa4sm\validator\fixtures\versions.json
     "C3S_V201706": "v201706",
+    "C3S_V201812": "v201812",
+    "C3S_V201912": "v201912",
     "SMAP_V5_PM": "v5 PM/ascending",
+    "SMAP_V5_AM": "v5 AM/descending",
     "ASCAT_H113": "H113",
     "ISMN_V20180712_TEST": "20180712 testset",
     "ISMN_V20180712_MINI": "20180712 mini testset",
     "ISMN_V20180830_GLOBAL": "20180830 global",
+    "ISMN_V20190222_GLOBAL": "20190222 global",
     "GLDAS_NOAH025_3H_2_1": "NOAH025 3H.2.1",
     "GLDAS_TEST": "TEST",
-    "C3S_V201812": "v201812",
-    "ISMN_V20190222": "20190222 global",
     "ESA_CCI_SM_C_V04_4": "v04.4",
+    "ESA_CCI_SM_A_V04_4": "v04.4",
+    "ESA_CCI_SM_P_V04_4": "v04.4",
+    "ESA_CCI_SM_C_V04_5": "v04.5",
+    "ESA_CCI_SM_A_V04_5": "v04.5",
+    "ESA_CCI_SM_P_V04_5": "v04.5",
     "SMOS_105_ASC": "V.105 Ascending",
-    "ERA5_test": "ERA5 test",
-    "ERA5": "ERA5",
-    "ERA5_LAND" : "ERA5-Land",
-    "ERA5_LAND_TEST": "ERA5-Land Test"
+    "SMOS_105_DES": "V.105 Descending",
+    "ERA5_test": " ERA5 test",
+    "ERA5_20190613": "v20190613",
+    "ERA5_LAND_V20190904" : "v20190904",
+    "ERA5_LAND_TEST": "ERA5-Land test"
 }

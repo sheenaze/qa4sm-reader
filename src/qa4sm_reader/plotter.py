@@ -403,7 +403,7 @@ class QA4SM_MetaImg_Plotter(QA4SM_MetaImg):
         # === Get ready... ===
         #df = self._ds2df([var], extent)
         df = self._ds2df([var], extent)
-        varmeta = self.meta_get_varmeta([var])
+        varmeta = self.get_var_meta([var])
         meta = varmeta[var]
         # === plot data ===
         fig, ax = mapplot(df=df, var=var, plot_extent=extent, meta=meta, **plot_kwargs)
@@ -435,17 +435,14 @@ class QA4SM_MetaImg_Plotter(QA4SM_MetaImg):
         return fnames
 
 if __name__ == '__main__':
-    #afile = r"H:\code\qa4sm-reader\tests\test_data\3-GLDAS.SoilMoi0_10cm_inst_with_1-C3S.sm_with_2-ESA_CCI_SM_combined.sm.nc"
-    afile = '/home/wolfgang/code/qa4sm-reader/tests/test_data/3-GLDAS.SoilMoi0_10cm_inst_with_1-C3S.sm_with_2-ESA_CCI_SM_combined.sm.nc'
-    tcfile= '/home/wolfgang/code/qa4sm-reader/tests/test_data/3-ERA5.swvl1_with_1-SMOS.Soil_Moisture_with_2-SMOS.Soil_Moisture.nc'
+    tcfile= r"H:\code\qa4sm-reader\tests\test_data\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-SMOS.Soil_Moisture.nc"
     plotter = QA4SM_MetaImg_Plotter(tcfile)
-    #out_dir = r"C:\Temp\qa4smreader_plots"
-    out_dir = r"/tmp/qa4sm_plots"
+    out_dir = r"C:\Temp\qa4smreader_plots"
     metrics = plotter.metrics_in_file(group=False)
     for metric in metrics:
         print(metric)
         #plotter.boxplot(metric, out_dir=out_dir)
-        vars = plotter._vars4metric(metric)
+        vars = plotter._met2vars(metric)
         for var in vars:
             plotter.mapplot(var, out_dir=out_dir)
     #plotter.boxplot('n_obs', out_dir=out_dir)

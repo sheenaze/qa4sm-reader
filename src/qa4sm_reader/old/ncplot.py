@@ -34,7 +34,7 @@ from qa4sm_reader import globals
 import xarray as xr
 
 
-#from qa4sm_reader.read import load, _vars4metric, meta_get_varmeta, _get_meta
+#from qa4sm_reader.read import load, _met2vars, get_var_meta, _var_meta
 
 
 # === File level ===

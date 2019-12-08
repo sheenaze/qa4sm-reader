@@ -47,7 +47,7 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png',
         # === load data and metadata ===
         plotter.boxplot(metric, extent, out_dir=out_dir, out_type=out_type,
                         **boxplot_kwargs)
-        vars = plotter._vars4metric(metric)
+        vars = plotter._met2vars(metric)
         for var in vars:
             plotter.mapplot(var, extent, out_dir=out_dir, out_type=out_type,
                             **mapplot_kwargs)

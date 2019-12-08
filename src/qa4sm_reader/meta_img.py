@@ -1,17 +1,14 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Dec 04 12:19 2019
 
-@author: wolfgang
-"""
 import re
 from pprint import pprint
 from parse import parse
 from qa4sm_reader import globals
-from qa4sm_reader.img import QA4SM_Img, parse_filename
+from qa4sm_reader.img import QA4SMImg, parse_filename
+import warnings
+import numpy as np
 
-
-class QA4SM_MetaImg(QA4SM_Img):
+class QA4SM_MetaImg(QA4SMImg):
     """
     QA4SM Results with metadata information
     """
@@ -34,24 +31,24 @@ class QA4SM_MetaImg(QA4SM_Img):
         print('================================================================')
         print('================================================================')
         print('Metrics from variables:\n')
-        print([self._var2metric(var) for var in self.ds.variables.keys()])
+        print([self._var2met(var) for var in self.ds.variables.keys()])
         print('================================================================')
         print('Variables from metrics:\n')
         m_file = self.metrics_in_file()
         metrics = []
         for g, m in m_file.items():
             for i in m: metrics.append(i)
-        print([self._vars4metric(m) for m in metrics])
+        print([self._met2vars(m) for m in metrics])
         print('================================================================')
         # print the datasets in the file
 
-    def num2short(self, num=0):
+    def _num2short(self, num=0):
         attr = globals._ds_short_name_attr.format(num)
         if attr not in self.global_meta:
             raise ValueError(num, 'No dataset for that index.')
         return self.global_meta[attr]
 
-    def short2num(self, short):
+    def _short2num(self, short):
         glob_meta_inverted = dict()
         for key, value in self.global_meta.items():
             glob_meta_inverted.setdefault(value, list()).append(key)
@@ -94,7 +91,7 @@ class QA4SM_MetaImg(QA4SM_Img):
 
         return ref_short_name, ds_short_names
 
-    def short_to_pretty(self, src):
+    def short_to_pretty(self, src, ignore_error=False):
         """
         Read the pretty name of a dataset from the metadata.
         First tries to find info from ds.attrs. Then falls back to globals.
@@ -116,11 +113,17 @@ class QA4SM_MetaImg(QA4SM_Img):
         """
         if isinstance(src, str):
             short_name = src
-            number = self.short2num(short_name)
+            try:
+                number = self._short2num(short_name)
+            except ValueError as e:
+                if ignore_error:
+                    number = 9999
+                else:
+                    raise e
             if isinstance(number, int):
                 number = [number]
         elif isinstance(src, int):
-            short_name = self.num2short(src)
+            short_name = self._num2short(src)
             number = [src]
         else:
             raise IOError(src, 'Unexpected input format (pass str or int)')
@@ -130,9 +133,11 @@ class QA4SM_MetaImg(QA4SM_Img):
             assert all([e==pretty_name[0] for e in pretty_name])
             pretty_name = pretty_name[0]
         except KeyError:
+            warnings.warn('Pretty Name not found in file, fallback to globals.')
             try:
                 pretty_name = globals._dataset_pretty_names[short_name]
             except KeyError:
+                warnings.warn('Pretty Name not found in file and in globals, use version short name.')
                 pretty_name = short_name
         try:
             version = [self.ds.attrs[globals._version_short_name_attr.format(n)] for n in number]
@@ -143,21 +148,20 @@ class QA4SM_MetaImg(QA4SM_Img):
                 assert all([e == version_pretty_name[0] for e in version_pretty_name])
                 version_pretty_name = version_pretty_name[0]
             except KeyError:
+                warnings.warn('Version Pretty Name not found in file, fallback to globals.')
                 try:
                     version_pretty_name = globals._dataset_version_pretty_names[version]
                 except KeyError:
+                    warnings.warn('Version Pretty Name not found in file and not in globals, use version name.')
                     version_pretty_name = version
         except KeyError:
+            warnings.warn('Unknown Version!')
             version = 'unknown'
             version_pretty_name = 'unknown version'
 
         return pretty_name, version, version_pretty_name
 
-    def _get_metrics(self):
-        varmeta = self.meta_get_varmeta(self)
-        return {varmeta[meta]['metric'] for meta in varmeta}
-
-    def meta_get_varmeta(self, vars=None):
+    def get_var_meta(self, vars=None):
         """
         get meta for all variables and return a nested dict.
 
@@ -167,10 +171,66 @@ class QA4SM_MetaImg(QA4SM_Img):
             List of variables
         """
         if not vars:  # get all variables.
-            vars = self._vars4metric(None)
-        return {var: self._get_meta(var) for var in vars}
+            vars = self.vars_in_file()
+        return {var: self._var_meta(var) for var in vars}
 
-    def _get_meta(self, var):
+    def _compile_var(self, var, var_group):
+        """Use regex to parse the variable name"""
+        meta = dict()
+        if var_group == 2:  # basic metrics
+            template = r"""(\D+)_between_(\d+)-(\S+)_and_(\d+)-(\S+)"""
+            pattern = re.compile(template)
+            match = pattern.match(var)
+            # metric
+            meta['metric'] = match.group(1)
+            # datasets
+            meta['ref_no'] = int(match.group(2))
+            meta['ref'] = match.group(3)
+            meta['ds1_no'] = int(match.group(4))
+            meta['ds1'] = match.group(5)
+            # other
+            meta['var_group'] = var_group
+            n_ds = 1
+        elif var_group == 3:  # TC metrics
+            template = r"""(\D+)_(\d+)-(\S+)_between_(\d+)-(\S+)_and_(\d+)-(\S+)_and_(\d+)-(\S+)"""
+            pattern =  re.compile(template)
+            match = pattern.match(var)
+            # metric
+            meta['metric'] = match.group(1)
+            meta['ds_metric_no'] = int(match.group(2))
+            meta['ds_metric'] = match.group(3)
+            # reference
+            meta['ref_no'] = int(match.group(4))
+            meta['ref'] = match.group(5)
+            # datasets
+            meta['ds1_no'] = int(match.group(6))
+            meta['ds1'] = match.group(7)
+            meta['ds2_no'] = int(match.group(8))
+            meta['ds2'] = match.group(9)
+            # other
+            meta['var_group'] = var_group
+            n_ds = 2
+        elif var_group == 0:  # common metrics
+            template = r"""(\D+)"""
+            pattern = re.compile(template)
+            match = pattern.match(var)
+            meta['metric'] = [match.group(1)]
+            # we cannot use the variable name in that case, so use the metadata
+            ref_short_name, ds_short_names = self.get_short_names()
+            meta['ref'] = ref_short_name
+            meta['ref_no'] = None
+            n_ds = 0
+            for i, ds in enumerate(np.unique(ds_short_names), start=1):
+                meta['ds{}'.format(i)] = ds  # no need for nums as we use unique
+                meta['ds{}_no'.format(i)] = None
+                n_ds += 1
+        else:
+            raise ValueError(var_group, 'var_group {} is not supported'.format(var_group))
+
+        return meta, n_ds
+
+
+    def _var_meta(self, var):
         """
         parses the var name and gets metadata from tha *.nc dataset.
         checks consistency between the dataset and the variable name.
@@ -178,82 +238,25 @@ class QA4SM_MetaImg(QA4SM_Img):
         # === consistency with dataset ===
         if not var in self.ds.variables:
             raise ValueError('The given var \'{}\' is not contained in the dataset.'.format(var))
-        # === parse var ===
-        meta = dict()
-        metr = self._var2metric(var)
-        if (metr in globals.metric_groups[0]) or (metr in globals.metric_groups[2]):
-            try:
-                g = 2
-                pattern = re.compile(r"""(\D+)_between_(\d+)-(\S+)_and_(\d+)-(\S+)""")
-                match = pattern.match(var)
-                meta['metric'] = match.group(1)
-                meta['ref_no'] = int(match.group(2))
-                meta['ref'] = match.group(3)
-                meta['ds_no'] = int(match.group(4))
-                meta['ds'] = match.group(5)
-                meta['g'] = g
-            except AttributeError:
-                g = 0
-                if var == 'n_obs':  # catch error occurring when var is 'n_obs'
-                    meta['metric'] = 'n_obs'
-                    datasets = {}
-                    i = 1  # numbers as in meta and var. In Attributes, it is numbers-1
-                    while True:
-                        try:
-                            datasets[i] = self.ds.attrs['val_dc_dataset' + str(i - 1)]
-                            i += 1
-                        except KeyError:
-                            break
-                    try:
-                        meta['ref_no'] = int(self.ds.attrs['val_ref'][-1])  # last character of string is reference number
-                        meta['ref'] = self.ds.attrs[self.ds.attrs['val_ref']]  # e.g. val_ref = "val_dc_dataset3"
-                    except KeyError:  # for some reason, the attribute lookup failed. Fall back to the last element in dict
-                        meta['ref_no'] = list(datasets)[-1]
-                        meta['ref'] = datasets[meta['ref_no']]
-                    datasets.pop(meta['ref_no'])
-                    meta['ds_no'] = list(datasets.keys())  # list instead of int
-                    meta['ds'] = [datasets[i] for i in meta['ds_no']]  # list instead of str
-                    meta['g'] = g
-                else:
-                    raise Exception('The given var \'{}\' does not match the regex pattern.'.format(var))
-        else:  # TC
-            g = 3
-            pattern =  re.compile(r"""(\D+)_(\d+)-(\S+)_between_(\d+)-(\S+)_and_(\d+)-(\S+)_and_(\d+)-(\S+)""")
-            match = pattern.match(var)
-            meta['metric'] = [match.group(1), match.group(2), match.group(3)]
-            meta['ref_no'] = int(match.group(4))
-            meta['ref'] = match.group(5)
-            meta['ds1_no'] = int(match.group(6))
-            meta['ds1'] = match.group(7)
-            meta['ds2_no'] = int(match.group(8))
-            meta['ds2'] = match.group(9)
-            meta['g'] = g
 
-        dss = ('ds', 'ref') if g in [0,2] else ('ds1', 'ds2', 'ref')
-        for i in dss:
-            name = meta[i]
-            number = meta[i + '_no']
-            if (type(name) == list) and (
-                    type(number) == list):  # e.g. ds of n_obs are several: the rest needs to be list as well
-                meta[i + '_pretty_name'] = list()
-                meta[i + '_version'] = list()
-                meta[i + '_version_pretty_name'] = list()
-                for na, no in zip(name, number):
-                    pretty_name, version, version_pretty_name = \
-                        self.short_to_pretty(na)
-                    meta[i + '_pretty_name'].append(pretty_name)
-                    meta[i + '_version'].append(version)
-                    meta[i + '_version_pretty_name'].append(version_pretty_name)
-            else:  # usual case.
-                pretty_name, version, version_pretty_name = \
-                    self.short_to_pretty(name)
-                meta[i + '_pretty_name'] = pretty_name
-                meta[i + '_version'] = version
-                meta[i + '_version_pretty_name'] = version_pretty_name
+        metr = self._var2met(var)
+        g = self._metr_grp(metr)
+        m, n_ds = self._compile_var(var, var_group=g)
+        meta = m.copy()
 
+        ref_dss = ['ref'] + ['ds{}'.format(i) for i in range(1, n_ds+1)]
+        for ds in ref_dss:  # ref is 0, ds1 is 1 etc
+            name = meta[ds]
+            number = meta[ds + '_no']
+            pretty_name, version, version_pretty_name = \
+                self.short_to_pretty(name)
+            meta['{}_pretty_name'.format(ds)] = pretty_name
+            meta['{}_version'.format(ds)] = version
+            meta['{}_version_pretty_name'.format(ds)] = version_pretty_name
+            
         return meta
 
-    def load_metric_and_meta(self, metric, extent=None, index_names=globals.index_names):
+    def load_metric_and_meta(self, metric):
         """
         Loads data from *.nc file in filepath and returns it as pandas.DataFrame,
         including a metadata dictionary.
@@ -274,8 +277,8 @@ class QA4SM_MetaImg(QA4SM_Img):
         varmeta : dict
             Dictionary containing a meta dict for each variable in df.
         """
-        df, vars = self.load_metric(metric, extent, index_names)
-        varmeta = self.meta_get_varmeta(vars)
+        df, vars = self.load_metric(metric)
+        varmeta = self.get_var_meta(vars)
         return df, varmeta
 
 
@@ -285,29 +288,45 @@ if __name__ == '__main__':
     reader.print_info()
     metrics_in_file = reader.metrics_in_file()
     vars_in_file = reader.vars_in_file()
-    vars_snr = reader._vars4metric('snr')
-    vars_R = reader._vars4metric('R')
+    vars_snr = reader._met2vars('snr')
+    vars_R = reader._met2vars('R')
 
-    df_R = reader._ds2df(reader._vars4metric('R'), extent=None)
-    meta_RMSD = reader._get_meta('RMSD_between_3-ERA5_LAND_and_2-SMOS')
-    meta_R = reader._get_meta('R_between_3-ERA5_LAND_and_2-SMOS')
+    df_R = reader._ds2df(reader._met2vars('R'))
+    meta_nobs = reader._var_meta('n_obs')
+    meta_RMSD = reader._var_meta('RMSD_between_3-ERA5_LAND_and_2-SMOS')
+    meta_R = reader._var_meta('R_between_3-ERA5_LAND_and_2-SMOS')
     also_df_R, also_meta_R = reader.load_metric_and_meta('R')
 
-    num = reader.short2num('ERA5_LAND') # short name to index number
+    num = reader._short2num('ERA5_LAND') # short name to index number
     pre, v1, pre_vers = reader.short_to_pretty(2) # short name to pretty name
     tty, v2, tty_vers = reader.short_to_pretty('ERA5_LAND')
     assert pre == tty
     assert pre_vers == tty_vers
+    #
+    # varsinfile= reader.vars_in_file(exclude_empty=True)
+    #
+    # short_names = reader.get_short_names() # all short names
+    # for var in vars_R + vars_snr:
+    #     metric = reader._var2met(var)
+    #     meta = reader.get_var_meta([var])
+    #
+    # reader.print_info()
+    #
+    # img, vars = reader.load_metric('R')
+    # df, varmeta = reader.load_metric_and_meta('R')
 
-    short_names = reader.get_short_names() # all short names
-    for var in vars_R + vars_snr:
-        metric = reader._var2metric(var)
-        meta = reader.meta_get_varmeta([var])
 
-    reader.print_info()
 
-    img, vars = reader.load_metric('R')
-    df, varmeta = reader.load_metric_and_meta('R')
+
+
+
+
+
+
+
+
+
+
     #img = reader.load_dataset('ESA_CCI_SM')
 
 # def load_data(filepath, variables, extent=None, index_names=globals.index_names):
