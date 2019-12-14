@@ -8,8 +8,7 @@ import qa4sm_reader.plotter
 from qa4sm_reader.plotter import QA4SM_MetaImg_Plotter
 
 def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png',
-             boxplot_kwargs=dict(),
-             mapplot_kwargs=dict()):
+             boxplot_kwargs=dict(), mapplot_kwargs=dict()):
     """
     Creates boxplots for all metrics and map plots for all variables. Saves the output in a folder-structure.
 

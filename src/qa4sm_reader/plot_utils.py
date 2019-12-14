@@ -1,35 +1,19 @@
 # -*- coding: utf-8 -*-
-
-
-__author__ = "Lukas Racbhauer"
-__copyright__ = "2019, TU Wien, Department of Geodesy and Geoinformation"
-__license__ = "mit"
-
-
 """
-Contains plotting routines that take pd.DataFrames and metadata dictionaries 
-as input and return figure and axes objects.
+Contains helper functions for plotting qa4sm results.
 """
-
 from qa4sm_reader import globals
-
 import numpy as np
 import pandas as pd
-
 import os.path
-
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import matplotlib.gridspec as gridspec
-
 from cartopy import config as cconfig
 import cartopy.feature as cfeature
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-
 import warnings
-
 cconfig['data_dir'] = os.path.join(os.path.dirname(__file__), 'cartopy')
-
 
 def _float_gcd(a, b, atol=1e-08):
     "Greatest common divisor (=groesster gemeinsamer teiler)"
@@ -79,8 +63,8 @@ def geotraj_to_geo2d(df, var, index=globals.index_names):
     data_extent : tuple
         (x_min, x_max, y_min, y_max) in Data coordinates.
     """
-    xx = df[index[1]]  # lon
-    yy = df[index[0]]  # lat
+    xx = df.index.get_level_values(index[1])  # lon
+    yy = df.index.get_level_values(index[0])   # lat
     data = df[var]
 
     x_min, x_max, dx, len_x = _get_grid(xx)
@@ -96,8 +80,7 @@ def geotraj_to_geo2d(df, var, index=globals.index_names):
 
     return zz, data_extent
 
-
-def get_value_range(ds, metric=None, force_quantile=False, quantiles=[0.025, 0.975]):
+def get_value_range(ds, metric=None, offset_q01=0.01):
     """
     Get the value range (v_min, v_max) from globals._metric_value_ranges
     If the range is (None, None), a symmetric range around 0 is created,
@@ -106,17 +89,12 @@ def get_value_range(ds, metric=None, force_quantile=False, quantiles=[0.025, 0.9
 
     Parameters
     ----------
-    ds : (pandas.Series | pandas.DataFrame)
+    ds : pd.DataFrame or pd.Series
         Series holding the data
-    metric : (str | None), optional
+    metric : str , optional (default: None)
         name of the metric (e.g. 'R'). None equals to force_quantile=True.
-        The default is None.
-    force_quantile : bool, optional
-        always use quantile, regardless of globals.
-        The default is False.
-    quantiles : list, optional
-        quantile of data to include in the range.
-        The default is [0.025,0.975]
+    offset_q01 : float
+        Percentage offset to add to the max or min if quantile is 0 or 1
 
     Returns
     -------
@@ -124,39 +102,36 @@ def get_value_range(ds, metric=None, force_quantile=False, quantiles=[0.025, 0.9
         lower value range of plot.
     v_max : float
         upper value range of plot.
-    extend : str
-        arg for colorbar. Whether to extend the colorbar using an arrow.
     """
-    if metric == None:
-        force_quantile = True
+    v_min = globals._metric_value_ranges[metric][0]
+    v_max = globals._metric_value_ranges[metric][1]
 
-    if not force_quantile:  # try to get range from globals
-        try:
-            v_min = globals._metric_value_ranges[metric][0]
-            v_max = globals._metric_value_ranges[metric][1]
-            if (v_min is None and v_max is None):  # get quantile range and make symmetric around 0.
-                v_min, v_max = get_quantiles(ds, quantiles)
-                v_max = max(abs(v_min), abs(v_max))  # make sure the range is symmetric around 0
-                v_min = -v_max
-            elif v_min is None:
-                v_min = get_quantiles(ds, quantiles)[0]
-            elif v_max is None:
-                v_max = get_quantiles(ds, quantiles)[1]
-            else:  # v_min and v_max are both determinded in globals
-                pass
-        except KeyError:  # metric not known, fall back to quantile
-            force_quantile = True
-            warnings.warn('The metric \'{}\' is not known. \n'.format(metric) + \
-                          'Could not get value range from globals._metric_value_ranges\n' + \
-                          'Computing quantile range \'{}\' instead.\n'.format(str(quantiles)) +
-                          'Known metrics are: \'' + \
-                          '\', \''.join([metric for metric in globals._metric_value_ranges]) + '\'')
-
-    if force_quantile:  # get quantile range
-        v_min, v_max = get_quantiles(ds, quantiles)
+    if isinstance(v_min, tuple) and isinstance(v_max, tuple):
+        assert v_min[0] == 'quantile' == v_max[0]
+        q_min = v_min[1]
+        q_max = v_max[1]
+        if q_min == 0.:
+            v_min = min(min(ds)) - (abs(min(min(ds))) * offset_q01)
+        else:
+            v_min, _ = get_quantiles(ds, [q_min, 1])
+        if q_max == 1.:
+            v_max = max(max(ds)) + (abs(max(max(ds))) * offset_q01)
+        else:
+            _, v_max = get_quantiles(ds, [0, q_max])
+        if (q_min + q_max) == 1.: # make sure the range is symmetric around 0
+             v_max = max(abs(v_min), abs(v_max))
+             v_min = -v_max
+    else:
+        if isinstance(v_min, tuple) and not isinstance(v_max, tuple):
+            assert v_min[0] == 'quantile'
+            q_min = v_min[1]
+            v_min, _ = get_quantiles(ds, [q_min, 1])
+        elif not isinstance(v_min, tuple) and isinstance(v_max, tuple):
+            assert v_max[0] == 'quantile'
+            q_max = v_max[1]
+            _, v_max = get_quantiles(ds, [0, q_max])
 
     return v_min, v_max
-
 
 def get_quantiles(ds, quantiles):
     """
@@ -185,7 +160,6 @@ def get_quantiles(ds, quantiles):
     else:
         raise TypeError("Inappropriate argument type. 'ds' must be pandas.Series or pandas.DataFrame.")
 
-
 def get_plot_extent(df, grid=False):
     """
     Gets the plot_extent from the data. Uses range of data and 
@@ -206,12 +180,12 @@ def get_plot_extent(df, grid=False):
     """
     lat, lon = globals.index_names
     if grid:
-        x_min, x_max, dx, len_x = _get_grid(df[lon])
-        y_min, y_max, dy, len_y = _get_grid(df[lat])
+        x_min, x_max, dx, len_x = _get_grid(df.index.get_level_values(lon))
+        y_min, y_max, dy, len_y = _get_grid(df.index.get_level_values(lat))
         extent = [x_min-dx/2., x_max+dx/2., y_min-dx/2., y_max+dx/2.]
     else:
-        extent = [df[lon].min(), df[lon].max(),
-                  df[lat].min(), df[lat].max()]
+        extent = [df.index.get_level_values(lon).min(), df.index.get_level_values(lon).max(),
+                  df.index.get_level_values(lat).min(), df.index.get_level_values(lat).max()]
     dx = extent[1] - extent[0]
     dy = extent[3] - extent[2]
     # set map-padding around data to be globals.map_pad percent of the smaller dimension
@@ -230,7 +204,6 @@ def get_plot_extent(df, grid=False):
         extent[3] = 90
     return extent
 
-
 def init_plot(figsize, dpi, add_cbar, projection):
     if not projection:
         projection=globals.crs
@@ -244,7 +217,6 @@ def init_plot(figsize, dpi, add_cbar, projection):
         ax = fig.add_subplot(gs[0], projection=projection)
         cax = None
     return fig, ax, cax
-
 
 def get_extend_cbar(metric):
     """
@@ -271,48 +243,6 @@ def get_extend_cbar(metric):
             return 'max'
         else:
             return 'neither'
-
-
-def _make_cbar(fig, im, cax, ds, v_min, v_max, meta, label=None):
-    metric = meta['metric']
-    ref = meta['ref']
-    if not label:
-        try:
-            label = globals._metric_name[metric] + \
-                    globals._metric_description[metric].format(
-                        globals._metric_units[ref])
-        except KeyError as e:
-            raise Exception('The metric \'{}\' or reference \'{}\' is not known.\n'.format(metric, ref) + str(e))
-    extend = get_extend_cbar(metric)
-    cbar = fig.colorbar(im, cax=cax, orientation='horizontal', extend=extend)
-    cbar.set_label(label, weight='normal')  # TODO: Bug: If a circumflex ('^') is in the string, it becomes bold.)
-    cbar.outline.set_linewidth(0.4)
-    cbar.outline.set_edgecolor('black')
-    cbar.ax.tick_params(width=0.4)  # , labelsize=4)
-
-
-def _make_title(ax, meta=None, title=None, title_pad=globals.title_pad):
-    if not title:
-        try:
-            if meta['metric'] in globals.metric_groups[3]:
-                title = 'Comparing {0} ({1}) to {2} ({3}) to {4} ({5})'.format(
-                    meta['ref_pretty_name'],
-                    meta['ref_version_pretty_name'],
-                    meta['ds1_pretty_name'],
-                    meta['ds1_version_pretty_name'],
-                    meta['ds2_pretty_name'],
-                    meta['ds2_version_pretty_name']
-                )
-            else:
-                title = 'Comparing {0} ({1}) to {2} ({3})'.format(
-                    meta['ref_pretty_name'],
-                    meta['ref_version_pretty_name'],
-                    meta['ds_pretty_name'],
-                    meta['ds_version_pretty_name'])
-        except TypeError:
-            raise Exception('Either \'meta\' or \'title\' need to be specified!')
-    ax.set_title(title, pad=title_pad)
-
 
 def style_map(ax, plot_extent, add_grid=True, map_resolution=globals.naturalearth_resolution,
               add_topo=False, add_coastline=True,
@@ -368,7 +298,7 @@ def style_map(ax, plot_extent, add_grid=True, map_resolution=globals.naturaleart
         ax.add_feature(cfeature.STATES, linewidth=0.1, zorder=3)
 
 
-def make_watermark(fig, placement):
+def make_watermark(fig, placement=globals.watermark_pos):
     """
     Adds a watermark to fig and adjusts the current axis to make sure there
     is enough padding around the watermarks.
@@ -383,18 +313,13 @@ def make_watermark(fig, placement):
     placement : str
         'top' : places watermark in top right corner
         'bottom' : places watermark in bottom left corner
-
-    Returns
-    -------
-    None.
-
     """
     # ax = fig.gca()
     # pos1 = ax.get_position() #fraction of figure
     fontsize = globals.watermark_fontsize
     pad = globals.watermark_pad
     height = fig.get_size_inches()[1]
-    offset = ((fontsize + pad) / globals.matplotlib_ppi) / height
+    offset = (((fontsize + pad) / globals.matplotlib_ppi) / height) * 2.2
     if placement == 'top':
         plt.annotate(s=globals.watermark, xy=[1, 1], xytext=[-pad, -pad],
                      fontsize=fontsize, color='grey',
@@ -410,27 +335,6 @@ def make_watermark(fig, placement):
         bottom = fig.subplotpars.bottom
         fig.subplots_adjust(bottom=bottom + offset)  # defaults to rc when none!
     else:
-        pass
+        raise NotImplementedError
 
 
-def _get_globdict(meta):
-    globkeys = ['metric', 'ref', 'ref_pretty_name', 'ref_version', 'ref_version_pretty_name']
-    return {k: meta[k] for k in globkeys}
-
-
-def _get_globmeta(varmeta):
-    """
-    get globmeta from varmeta and make sure it is consistent in itself.
-    """
-    variter = iter(varmeta)
-    globmeta = _get_globdict(varmeta[next(variter)])
-    while True:  # for loop with iterator: compare if globmeta is universal among all variables
-        try:
-            var = next(variter)
-            if globmeta != _get_globdict(varmeta[var]):
-                raise Exception(
-                    'Global Metadata inconsistent among variables!\nglobmeta : {}\nvs.\nglobmeta(\'{}\') : {}'.format(
-                        globmeta, var, _get_globdict(varmeta[var])))
-        except StopIteration:
-            break
-    return globmeta

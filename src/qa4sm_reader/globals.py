@@ -27,12 +27,12 @@ max_title_len = 50  # maximum length of plot title in chars. if longer, it will 
 boxplot_printnumbers = True  # Print 'median', 'nObs', 'stdDev' to the boxplot.
 boxplot_figsize = [6.30, 4.68]  # size of the output figure in inches. NO MORE USED.
 boxplot_height = 4.68
-boxplot_width = 1.5  # times (n+1), where n is the number of boxes.
-boxplot_title_len = 15  # times the number of boxes. maximum length of plot title in chars.
+boxplot_width = 1.7  # times (n+1), where n is the number of boxes.
+boxplot_title_len = 8 * boxplot_width  # times the number of boxes. maximum length of plot title in chars.
 
 # === watermark defaults ===
 watermark = u'made with QA4SM (qa4sm.eodc.eu)'  # Watermark string
-watermark_pos = 'top'  # Default position ('top' or 'bottom')
+watermark_pos = 'bottom'  # Default position ('top' or 'bottom' or None)
 watermark_fontsize = 10  # fontsize in points (matplotlib uses 72ppi)
 watermark_pad = 5  # padding above/below watermark in points (matplotlib uses 72ppi)
 
@@ -64,13 +64,13 @@ metric_groups = {0 : ['n_obs'],
 
 # === variable template ===
 # how the metric is separated from the rest
-var_name_metric_sep = {0: "{metric}", 2: "{metric}_between_",
-                       3: "{metric}_{id0}-{dataset}_between_"}
-# how two datasets are separated
-var_name_ds_sep = {0: None, 2: "{id1}-{dataset1}_and_{id2}-{dataset2}",
-                   3: "{id1}-{dataset1}_and_{id2}-{dataset2}_and_{id3}-{dataset3}"}
+var_name_metric_sep = {0 : "{metric}", 2 : "{metric}_between_",
+                       3 : "{metric}_{mds_id:d}-{mds}_between_"}
+# how two datasets are separated, ids must be marked as numbers with :d!
+var_name_ds_sep = {0: None, 2: "{ref_id:d}-{ref_ds}_and_{sat_id0:d}-{sat_ds0}",
+                   3: "{ref_id:d}-{ref_ds}_and_{sat_id0:d}-{sat_ds0}_and_{sat_id1:d}-{sat_ds1}"}
 
-
+# === metadata tempplates ===
 _ref_ds_attr = 'val_ref' # global meta data variable that links to the reference dc
 _ds_short_name_attr = 'val_dc_dataset{:d}' # attribute convention for other datasets
 _ds_pretty_name_attr = 'val_dc_dataset_pretty_name{:d}' # attribute convention for other datasets
@@ -102,24 +102,24 @@ _colormaps = {  # from /qa4sm/validator/validation/graphics.py
 for group in metric_groups.keys():
     assert all([m in _colormaps.keys() for m in metric_groups[group]])
 
-# Value ranges of metrics
+# Value ranges of metrics, either absolute values, or a quantile between 0 and 1
 _metric_value_ranges = {  # from /qa4sm/validator/validation/graphics.py
     'R': [-1, 1],
     'p_R': [0, 1],  # probability that observed corellation is statistical fluctuation
     'rho': [-1, 1],
     'p_rho': [0, 1],
-    'RMSD': [0, None],
-    'BIAS': [None, None],
-    'n_obs': [0, None],
-    'urmsd': [0, None],
-    'RSS': [0, None],
-    'mse': [0, None],  # mse only positive (https://en.wikipedia.org/wiki/Mean_squared_error)
-    'mse_corr': [0, None],  # mse_corr only positive
-    'mse_bias': [0, None],  # mse_bias only positive
-    'mse_var': [0, None],  # mse_var only positive
-    'snr': [None, None],  # mse_var only positive
-    'err_std': [None, None],  # mse_var only positive
-    'beta': [None, None],  # mse_var only positive
+    'RMSD': [0, ('quantile', 0.975)],
+    'BIAS': [('quantile', 0.025), ('quantile', 0.975)],
+    'n_obs': [0, ('quantile', 1.)],
+    'urmsd': [0, ('quantile', 0.975)],
+    'RSS': [0, ('quantile', 0.975)],
+    'mse': [0, ('quantile', 0.975)],  # mse only positive (https://en.wikipedia.org/wiki/Mean_squared_error)
+    'mse_corr': [0, ('quantile', 0.975)],  # mse_corr only positive
+    'mse_bias': [0, ('quantile', 0.975)],  # mse_bias only positive
+    'mse_var': [0, ('quantile', 0.975)],  # mse_var only positive
+    'snr': [('quantile', 0.025), ('quantile', 0.975)],  # mse_var only positive
+    'err_std': [('quantile', 0.025), ('quantile', 0.975)],  # mse_var only positive
+    'beta': [('quantile', 0.025), ('quantile', 0.975)],  # mse_var only positive
 }
 
 # check if every metric has a colormap
@@ -213,6 +213,7 @@ _dataset_version_pretty_names = {  # from qa4sm\validator\fixtures\versions.json
     "ISMN_V20180712_MINI": "20180712 mini testset",
     "ISMN_V20180830_GLOBAL": "20180830 global",
     "ISMN_V20190222_GLOBAL": "20190222 global",
+    "ISMN_V20191211_GLOBAL": "20191211 global",
     "GLDAS_NOAH025_3H_2_1": "NOAH025 3H.2.1",
     "GLDAS_TEST": "TEST",
     "ESA_CCI_SM_C_V04_4": "v04.4",

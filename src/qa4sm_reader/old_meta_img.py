@@ -12,8 +12,8 @@ class QA4SM_MetaImg(QA4SMImg):
     """
     QA4SM Results with metadata information
     """
-    def __init__(self, filepath):
-        super(QA4SM_MetaImg, self).__init__(filepath)
+    def __init__(self, filepath, extent=None, index_names=globals.index_names):
+        super(QA4SM_MetaImg, self).__init__(filepath, extent, index_names)
         self.global_meta = self.ds.attrs
         self.var_meta = {var: self.ds.variables[var].attrs for var in self.ds.variables}
 
@@ -31,7 +31,8 @@ class QA4SM_MetaImg(QA4SMImg):
         print('================================================================')
         print('================================================================')
         print('Metrics from variables:\n')
-        print([self._var2met(var) for var in self.ds.variables.keys()])
+        y = lambda v: self._var2met(v)
+        print([y(v) for v in list(self.ds.variables.keys()) if y(v) is not None])
         print('================================================================')
         print('Variables from metrics:\n')
         m_file = self.metrics_in_file()
@@ -49,6 +50,20 @@ class QA4SM_MetaImg(QA4SMImg):
         return self.global_meta[attr]
 
     def _short2num(self, short):
+        """
+        Get the number for a dataset based on the short name. If there are
+        duplicate short names in the file, a list is returned.
+
+        Parameters
+        ----------
+        short : str
+            Short name, as in the variable name for example
+
+        Returns
+        -------
+        num : list or int
+            The according identifier(s)
+        """
         glob_meta_inverted = dict()
         for key, value in self.global_meta.items():
             glob_meta_inverted.setdefault(value, list()).append(key)
@@ -77,7 +92,7 @@ class QA4SM_MetaImg(QA4SMImg):
         -------
         ref_short_name : str
             Short name of the reference data set
-        ds_short_names : list
+        ds_short_names : np.array
             List of short names of the non-reference data sets
         """
         ref_short_name = self.ds.attrs[self.ds.attrs[globals._ref_ds_attr]]
@@ -89,7 +104,7 @@ class QA4SM_MetaImg(QA4SMImg):
                 if attr != ref_short_name:
                     ds_short_names.append(attr)
 
-        return ref_short_name, ds_short_names
+        return ref_short_name, np.array(ds_short_names)
 
     def short_to_pretty(self, src, ignore_error=False):
         """
@@ -106,10 +121,12 @@ class QA4SM_MetaImg(QA4SMImg):
         -------
         pretty_name : str
             The pretty name of the dataset.
-        version : str
-            The short version of the dataset.
-        version_pretty_name.
-            The pretty version of the dataset.
+        versions : list
+            The short version of the dataset, multiple entries if multiple versions
+            of the same dataset were used.
+        version_pretty_names: list
+            The short version of the dataset, multiple entries if multiple versions
+            of the same dataset were used.
         """
         if isinstance(src, str):
             short_name = src
@@ -139,14 +156,17 @@ class QA4SM_MetaImg(QA4SMImg):
             except KeyError:
                 warnings.warn('Pretty Name not found in file and in globals, use version short name.')
                 pretty_name = short_name
-        try:
-            version = [self.ds.attrs[globals._version_short_name_attr.format(n)] for n in number]
-            assert all([e==version[0] for e in version])
-            version = version[0]
+
+        versions = []
+        versions_pretty_names = []
+        for n in number:
             try:
-                version_pretty_name = [self.ds.attrs[globals._version_pretty_name_attr.format(n)] for n in number]
-                assert all([e == version_pretty_name[0] for e in version_pretty_name])
-                version_pretty_name = version_pretty_name[0]
+                version = self.ds.attrs[globals._version_short_name_attr.format(n)]
+            except KeyError as e:
+                raise e
+            versions.append(version)
+            try:
+                version_pretty_name = self.ds.attrs[globals._version_pretty_name_attr.format(n)]
             except KeyError:
                 warnings.warn('Version Pretty Name not found in file, fallback to globals.')
                 try:
@@ -154,12 +174,9 @@ class QA4SM_MetaImg(QA4SMImg):
                 except KeyError:
                     warnings.warn('Version Pretty Name not found in file and not in globals, use version name.')
                     version_pretty_name = version
-        except KeyError:
-            warnings.warn('Unknown Version!')
-            version = 'unknown'
-            version_pretty_name = 'unknown version'
+            versions_pretty_names.append(version_pretty_name)
 
-        return pretty_name, version, version_pretty_name
+        return pretty_name, versions, versions_pretty_names
 
     def get_var_meta(self, vars=None):
         """
@@ -169,6 +186,13 @@ class QA4SM_MetaImg(QA4SMImg):
         ---------
         vars : list
             List of variables
+
+        Returns
+        --------
+        meta : dict
+            Meta data for the variable
+        n_ds : int
+            Number of non reference datasets for the variable
         """
         if not vars:  # get all variables.
             vars = self.vars_in_file()
@@ -214,21 +238,25 @@ class QA4SM_MetaImg(QA4SMImg):
             template = r"""(\D+)"""
             pattern = re.compile(template)
             match = pattern.match(var)
-            meta['metric'] = [match.group(1)]
+            meta['metric'] = match.group(1)
             # we cannot use the variable name in that case, so use the metadata
             ref_short_name, ds_short_names = self.get_short_names()
             meta['ref'] = ref_short_name
-            meta['ref_no'] = None
-            n_ds = 0
-            for i, ds in enumerate(np.unique(ds_short_names), start=1):
-                meta['ds{}'.format(i)] = ds  # no need for nums as we use unique
-                meta['ds{}_no'.format(i)] = None
-                n_ds += 1
+            meta['ref_no'] = self._short2num(ref_short_name)
+            n_ds = 1
+            for ds in np.unique(ds_short_names):
+                num = self._short2num(ds)
+                if not isinstance(num, list):
+                    num = [num]
+                for j, n in enumerate(num):
+                    meta['ds{}_no'.format(n_ds)] = n
+                    meta['ds{}'.format(n_ds)] = ds
+                    n_ds += 1
+            n_ds -= 1
         else:
             raise ValueError(var_group, 'var_group {} is not supported'.format(var_group))
 
         return meta, n_ds
-
 
     def _var_meta(self, var):
         """
@@ -250,9 +278,10 @@ class QA4SM_MetaImg(QA4SMImg):
             number = meta[ds + '_no']
             pretty_name, version, version_pretty_name = \
                 self.short_to_pretty(name)
-            meta['{}_pretty_name'.format(ds)] = pretty_name
-            meta['{}_version'.format(ds)] = version
-            meta['{}_version_pretty_name'.format(ds)] = version_pretty_name
+            for v, vpn in zip(version, version_pretty_name):
+                meta['{}_pretty_name'.format(ds)] = pretty_name
+                meta['{}_version'.format(ds)] = v
+                meta['{}_version_pretty_name'.format(ds)] = vpn
             
         return meta
 
@@ -281,9 +310,9 @@ class QA4SM_MetaImg(QA4SMImg):
         varmeta = self.get_var_meta(vars)
         return df, varmeta
 
-
-if __name__ == '__main__':
+def testcase_normal():
     afile=r"H:\code\qa4sm-reader\tests\test_data\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-SMOS.Soil_Moisture.nc"
+
     reader = QA4SM_MetaImg(afile)
     reader.print_info()
     metrics_in_file = reader.metrics_in_file()
@@ -302,6 +331,41 @@ if __name__ == '__main__':
     tty, v2, tty_vers = reader.short_to_pretty('ERA5_LAND')
     assert pre == tty
     assert pre_vers == tty_vers
+
+
+def testcase_snr():
+    afile=r"H:\code\qa4sm-reader\tests\test_data\3-ERA5.swvl1_with_1-SMOS.Soil_Moisture_with_2-SMOS.Soil_Moisture.nc"
+
+    reader = QA4SM_MetaImg(afile)
+    reader.print_info()
+    metrics_in_file = reader.metrics_in_file()
+    vars_in_file = reader.vars_in_file()
+    vars_snr = reader._met2vars('snr')
+     # vars_R = reader._met2vars('R')
+
+    # df_R = reader._ds2df(reader._met2vars('R'))
+    # meta_nobs = reader._var_meta('n_obs')
+    # meta_RMSD = reader._var_meta('RMSD_between_3-ERA5_and_2-SMOS')
+    # meta_R = reader._var_meta('R_between_3-ERA5_and_2-SMOS')
+    # also_df_R, also_meta_R = reader.load_metric_and_meta('R')
+
+    df_snr =  reader._ds2df(reader._met2vars('snr'))
+
+    num = reader._short2num('ERA5') # short name to index number
+    pre0, v0, pre_vers0 = reader.short_to_pretty(0) # short name to pretty name
+    pre1, v1, pre_vers1 = reader.short_to_pretty(1) # short name to pretty name
+    assert (pre0 == pre1) and (v0==v1) and (pre_vers0==pre_vers1)
+    pre2, v2, pre_vers2 = reader.short_to_pretty(2) # short name to pretty name
+    tty, v2, tty_vers = reader.short_to_pretty('ERA5')
+    assert pre2 == tty
+    assert pre_vers2 == tty_vers
+
+    df, varmeta = reader.load_metric_and_meta('snr')
+
+
+if __name__ == '__main__':
+    testcase_normal()
+
     #
     # varsinfile= reader.vars_in_file(exclude_empty=True)
     #

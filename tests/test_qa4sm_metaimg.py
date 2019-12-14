@@ -14,7 +14,7 @@ class TestQA4SMMetaImgBasicIntercomp(unittest.TestCase):
         self.testfile = '3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-SMOS.Soil_Moisture.nc'
         self.testfile_path = os.path.join(os.path.dirname(__file__), '..','tests',
                                           'test_data', self.testfile)
-        self.img = QA4SM_MetaImg(self.testfile_path)
+        self.img = QA4SM_MetaImg(self.testfile_path, extent=(144., 149., -43, -40))
 
         self.n_ds = len(self.testfile.split('_with_'))
 
@@ -52,20 +52,63 @@ class TestQA4SMMetaImgBasicIntercomp(unittest.TestCase):
         pty_ref, ref_vers, ref_vers_pty = self.img.short_to_pretty('ASCAT', ignore_error=True)
         assert pty_ref == 'H-SAF ASCAT SSM CDR'
         assert ref_vers == 'unknown'
-        assert pty_ref == 'unknown version'
+        assert ref_vers_pty == 'unknown version'
+
+    def test_compile_var(self):
+        # common var
+        var = 'n_obs'
+        g = self.img._metr_grp(var)
+        assert g == 0
+        meta, n_sats = self.img._compile_var(var, var_group=g)
+        assert meta['metric'] == var
+        assert meta['ref'] == 'ERA5_LAND'
+        assert meta['ref_no'] is None
+        assert meta['ds1'] == 'C3S'
+        assert meta['ds1_no'] is None
+        assert meta['ds2'] == 'SMOS'
+        assert meta['ds2_no'] is None
+        assert n_sats == self.n_ds - 1 # because this excludes the reference
+
+        # wrong var
+        var = 'thisdoesnotexist'
+        g = self.img._metr_grp(var)
+        assert g is None
+
+        # double var
+        var = 'R_between_3-ERA5_LAND_and_1-C3S'
+        meta, n_sats = self.img._compile_var(var, var_group=2)
+        assert meta['metric'] == 'R'
+        assert meta['ref'] == 'ERA5_LAND'
+        assert meta['ref_no'] == 3
+        assert meta['ds1'] == 'C3S'
+        assert meta['ds1_no'] == 1
+        assert n_sats == 1 # because its only c3s
 
     def test_get_var_meta(self):
-        var = 'n_obs'
-        nobs_meta = self.img.get_var_meta([var])
-        assert nobs_meta[var]['metric'] == var
-        assert nobs_meta[var]['ref_pretty_name'] == 'ERA5-Land'
-        assert nobs_meta[var]['ref_version'] == 'ERA5_LAND_V20190904'
-        assert nobs_meta[var]['ref_version_pretty_name'] == 'v20190904'
-        {'n_obs': {'metric': 'n_obs', 'ref_no': 2, 'ref': 'ERA5_LAND', 'ds_no': [1, 3], 'ds': ['C3S', 'ERA5_LAND'],
-                   'g': 0, 'ds_pretty_name': ['C3S', 'ERA5-Land'], 'ds_version': ['C3S_V201812', 'ERA5_LAND_V20190904'],
-                   'ds_version_pretty_name': ['v201812', 'v20190904'], 'ref_pretty_name': 'ERA5-Land',
-                   'ref_version': 'ERA5_LAND_V20190904', 'ref_version_pretty_name': 'v20190904'}}
+        all_var_meta = self.img.get_var_meta()
+        assert all_var_meta['R_between_3-ERA5_LAND_and_1-C3S']['metric'] == 'R'
+        assert all_var_meta['R_between_3-ERA5_LAND_and_1-C3S']['ref'] == 'ERA5_LAND'
+        assert all_var_meta['R_between_3-ERA5_LAND_and_1-C3S']['ds1'] == 'C3S'
+
+    def test_load_metric_and_meta(self):
+        df, meta = self.img.load_metric_and_meta('n_obs')
+        assert len(df.index.values) == 217
+        assert list(meta.keys()) == ['n_obs']
+        df, meta = self.img.load_metric_and_meta('RMSD')
+        assert len(df.index.values) == 211
+        assert list(meta.keys()) == ['RMSD_between_3-ERA5_LAND_and_1-C3S',
+                                     'RMSD_between_3-ERA5_LAND_and_2-SMOS']
+        assert meta['RMSD_between_3-ERA5_LAND_and_1-C3S']['ref'] == 'ERA5_LAND'
+        assert meta['RMSD_between_3-ERA5_LAND_and_1-C3S']['ds1'] == 'C3S'
+        assert meta['RMSD_between_3-ERA5_LAND_and_1-C3S']['var_group'] == 2
+        assert meta['RMSD_between_3-ERA5_LAND_and_1-C3S']['ref_pretty_name'] == 'ERA5-Land'
+
+        assert meta['RMSD_between_3-ERA5_LAND_and_2-SMOS']['ds1_version'] == 'SMOS_105_ASC'
+        assert meta['RMSD_between_3-ERA5_LAND_and_2-SMOS']['ds1_version_pretty_name'] == 'V.105 Ascending'
 
 
 if __name__ == '__main__':
-    unittest.main()
+    suite = unittest.TestSuite()
+    suite.addTest(TestQA4SMMetaImgBasicIntercomp("test_get_var_meta"))
+    runner = unittest.TextTestRunner()
+    runner.run(suite)

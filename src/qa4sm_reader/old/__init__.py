@@ -21,7 +21,7 @@ if (metr in globals.metric_groups[0]) or (metr in globals.metric_groups[2]):
         if var == 'n_obs':  # catch error occurring when var is 'n_obs'
             meta['metric'] = 'n_obs'
             datasets = {}
-            i = 1  # numbers as in meta and var. In Attributes, it is numbers-1
+            i = 1  # numbers as in meta and var. In QA4SMAttributes, it is numbers-1
             while True:
                 try:
                     datasets[i] = self.ds.attrs['val_dc_dataset' + str(i - 1)]

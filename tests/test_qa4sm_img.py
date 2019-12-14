@@ -7,7 +7,6 @@ import numpy as np
 import unittest
 from src.qa4sm_reader import globals
 
-
 class TestQA4SMImgBasicIntercomp(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -34,7 +33,7 @@ class TestQA4SMImgBasicIntercomp(unittest.TestCase):
         print('test_metrics_in_file')
         # with grouped return value
         m_groups = self.img.metrics_in_file(group=True)
-        assert m_groups['single'] == globals.metric_groups[0]
+        assert m_groups['common'] == globals.metric_groups[0]
         for m in m_groups['double']:  # tau is not in the results
             assert m in globals.metric_groups[2]
         assert m_groups['triple'] == []  #  this is not the TC test case
@@ -59,16 +58,15 @@ class TestQA4SMImgBasicIntercomp(unittest.TestCase):
 
     def test_load_metrics(self):
         print('test_load_metrics')
-
         metrics_in_file = self.img.metrics_in_file(group=False)
         for metric in metrics_in_file:
             print(metric)
             df, vars = self.img.load_metric(metric)
 
             if metric in globals.metric_groups[0]:
-                assert len(df.columns) == 3
+                assert len(df.columns) == 1
             else:
-                assert len(df.columns) == (self.n_ds - 1) + 2
+                assert len(df.columns) == (self.n_ds - 1)
 
 if __name__ == '__main__':
     unittest.main()
