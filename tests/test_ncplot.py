@@ -51,8 +51,8 @@ def get_path(case):
         testfile = '3-GLDAS.SoilMoi0_10cm_inst_with_1-C3S.sm_with_2-ESA_CCI_SM_combined.sm.nc'
         # testfile = '4-GLDAS.SoilMoi0_10cm_inst_with_1-ESA_CCI_SM_combined.sm_with_2-SMAP.soil_moisture_with_3-SMOS.Soil_Moisture.nc'
         return os.path.join(os.path.dirname(__file__), 'test_data', testfile)
-    elif case == 'boxplot':
-        return os.path.join(os.path.dirname(__file__), 'test_results', 'boxplot')
+    elif case == 'boxplot_basic':
+        return os.path.join(os.path.dirname(__file__), 'test_results', 'boxplot_basic')
     elif case == 'mapplot':
         return os.path.join(os.path.dirname(__file__), 'test_results', 'mapplot')
     elif case == 'plot_all':
@@ -184,7 +184,7 @@ def test_boxplot_GLDAS_nan_default():
 
 
 def test_boxplot_GLDAS_options():
-    out_dir = get_path('boxplot')
+    out_dir = get_path('boxplot_basic')
     filepath = get_path('GLDAS')
     out_name = 'test_boxplot_GLDAS_options'
     variables = ncplot.get_variables(filepath, 'R')[:-1]
@@ -196,7 +196,7 @@ def test_boxplot_GLDAS_options():
 
 def test_boxplot_ISMN_extent():
     filepath = get_path('ISMN')
-    out_dir = get_path('boxplot')
+    out_dir = get_path('boxplot_basic')
     out_name = 'test_boxplot_ISMN_extent'
     out_type = 'png'
     ncplot.boxplot(filepath, 'R', EXTENT_SCATTER, out_dir, out_name, out_type)
@@ -205,7 +205,7 @@ def test_boxplot_ISMN_extent():
 
 def test_boxplot_GLDAS_nan_extent():
     filepath = get_path('GLDAS_nan')
-    out_dir = get_path('boxplot')
+    out_dir = get_path('boxplot_basic')
     out_name = 'test_boxplot_GLDAS_nan_extent'
     ncplot.boxplot(filepath, 'R', EXTENT_GRID, out_dir, out_name)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))

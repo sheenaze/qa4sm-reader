@@ -52,7 +52,7 @@ class TestQA4SMMetaImgBasicIntercomp(unittest.TestCase):
         pty_ref, ref_vers, ref_vers_pty = self.img.short_to_pretty('ASCAT', ignore_error=True)
         assert pty_ref == 'H-SAF ASCAT SSM CDR'
         assert ref_vers == 'unknown'
-        assert ref_vers_pty == 'unknown version'
+        assert ref_vers_pty == 'unknown __version'
 
     def test_compile_var(self):
         # common var

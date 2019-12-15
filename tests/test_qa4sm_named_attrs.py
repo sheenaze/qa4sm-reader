@@ -1,18 +1,24 @@
 # -*- coding: utf-8 -*-
 
-from src.qa4sm_reader.handlers import QA4SMDataAttributes
+from src.qa4sm_reader.handlers import QA4SMNamedAttributes
 from tests.test_qa4sm_attrs import test_attributes, test_tc_attributes
 import unittest
 
-class TestDatasets(unittest.TestCase):
+class TestQA4SMNamedAttributes(unittest.TestCase):
+
     def setUp(self) -> None:
         attrs = test_attributes()
-        self.ismn = QA4SMDataAttributes(id=6, short_name='ISMN', global_attrs=attrs)
-        self.c3s17 = QA4SMDataAttributes(id=1, short_name='C3S', global_attrs=attrs)
-        self.c3s18 = QA4SMDataAttributes(id=2, short_name='C3S', global_attrs=attrs)
-        self.smos = QA4SMDataAttributes(id=3, short_name='SMOS', global_attrs=attrs)
-        self.smap = QA4SMDataAttributes(id=4, short_name='SMAP', global_attrs=attrs)
-        self.ascat = QA4SMDataAttributes(id=5, short_name='ASCAT', global_attrs=attrs)
+        self.ismn = QA4SMNamedAttributes(id=6, short_name='ISMN', global_attrs=attrs)
+        self.c3s17 = QA4SMNamedAttributes(id=1, short_name='C3S', global_attrs=attrs)
+        self.c3s18 = QA4SMNamedAttributes(id=2, short_name='C3S', global_attrs=attrs)
+        self.smos = QA4SMNamedAttributes(id=3, short_name='SMOS', global_attrs=attrs)
+        self.smap = QA4SMNamedAttributes(id=4, short_name='SMAP', global_attrs=attrs)
+        self.ascat = QA4SMNamedAttributes(id=5, short_name='ASCAT', global_attrs=attrs)
+
+    def test_eq(self):
+        assert self.ismn != self.ascat
+        assert self.ismn == self.ismn
+        assert self.ascat == self.ascat
 
     def test_names(self):
         assert self.ismn.pretty_name() == 'ISMN'
@@ -36,6 +42,6 @@ class TestDatasets(unittest.TestCase):
 
 if __name__ == '__main__':
     suite = unittest.TestSuite()
-    suite.addTest(TestDatasets("test_get_ref_name"))
+    suite.addTest(TestQA4SMNamedAttributes("test_eq"))
     runner = unittest.TextTestRunner()
     runner.run(suite)

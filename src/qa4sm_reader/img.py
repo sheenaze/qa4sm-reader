@@ -9,13 +9,14 @@ from collections import OrderedDict
 from src.qa4sm_reader.handlers import _build_fname_templ
 from src.qa4sm_reader.handlers import QA4SMMetricVariable
 import pandas as pd
+import itertools
 
 class QA4SMImg(object):
     """
     A QA4SM validation results netcdf image.
     """
 
-    def __init__(self, filepath, extent=None, ignore_empty=True,
+    def __init__(self, filepath, extent=None, ignore_empty=True, metrics=None,
                  index_names=globals.index_names):
         """
         Initialise a common QA4SM results image.
@@ -25,10 +26,13 @@ class QA4SMImg(object):
         filepath : str
             Path to the results netcdf file (as created by QA4SM)
         extent : tuple, optional (default: None)
-            Area to subset the data for.
+            Area to subset the values for.
             (min_lon, max_lon, min_lat, max_lat)
         ignore_empty : bool, optional (default: True)
             Ignore empty variables in the file.
+        metrics : list or None, optional (default: None)
+            Subset of the metrics to load from file, if None are passed, all
+            are loaded.
         index_names : list, optional (default: ['lat', 'lon'] - as in globals.py)
             Names of dimension variables in x and y direction (lat, lon).
         """
@@ -41,26 +45,30 @@ class QA4SMImg(object):
         self.ignore_empty = ignore_empty
         self.ds = xr.load_dataset(self.filepath)
 
-        self.common, self.double, self.triple = self._load_all_metrics_from_file()
+        self.common, self.double, self.triple = self._load_metrics_from_file(metrics)
 
-    def _load_all_metrics_from_file(self) -> (dict, dict, dict):
+    def _load_metrics_from_file(self, metrics:list=None) -> (dict, dict, dict):
         """ Load and group all metrics from file """
+
         common, double, triple = dict(), dict(), dict()
-        for n, metrics in globals.metric_groups.items():
-            for metric in metrics:
-                metr_vars = self._load_metric_from_file(metric)
-                if len(metr_vars) > 0:
-                    if metric in globals.metric_groups[2]:
-                        double[metric] = metr_vars
-                    elif metric in globals.metric_groups[3]:
-                        triple[metric] = metr_vars
-                    else:
-                        common[metric] = metr_vars
+        if metrics is None:
+            metrics = list(itertools.chain(*list(globals.metric_groups.values())))
+        for metric in metrics:
+            # todo: loading every single variable is slow
+            metr_vars = self._load_metric_from_file(metric)
+            if len(metr_vars) > 0:
+                if metric in globals.metric_groups[2]:
+                    double[metric] = metr_vars
+                elif metric in globals.metric_groups[3]:
+                    triple[metric] = metr_vars
+                else:
+                    common[metric] = metr_vars
 
         return common, double, triple
 
     def _load_metric_from_file(self, metric:str) -> np.array:
         """ Load all variables that describe the metric from file. """
+
         all_vars = np.sort(np.array(list(self.ds.variables.keys())))
         metr_vars = []
         for var in all_vars:
@@ -75,22 +83,22 @@ class QA4SMImg(object):
         return np.array(metr_vars)
 
     def _load_var(self, varname:str) -> (QA4SMMetricVariable or None):
-        """ Create a common variable and fill it with data """
+        """ Create a common variable and fill it with values """
         try:
             vardata = self._ds2df([varname])
-            Var = QA4SMMetricVariable(varname, vardata, self.ds.attrs)
+            Var = QA4SMMetricVariable(varname, self.ds.attrs, values=vardata)
             return Var
         except IOError:
             return None
 
     def _ds2df(self, varnames:list) -> pd.DataFrame:
-        """ Cut a variable to extent and return it as a data frame """
+        """ Cut a variable to extent and return it as a values frame """
         try:
             df = self.ds[self.index_names + varnames].to_dataframe()
         except KeyError as e:
             raise Exception(
                 'The given variable ' + ', '.join(varnames) +
-                ' do not match the names in the input data.' + str(e))
+                ' do not match the names in the input values.' + str(e))
         df.dropna(axis='index', subset=varnames, inplace=True)
         if self.extent:  # === geographical subset ===
             lat, lon = globals.index_names
@@ -108,7 +116,7 @@ class QA4SMImg(object):
         ---------
         metric : str
             The name of a metric in the file, all variables for that metric are
-            combined into one data frame.
+            combined into one values frame.
 
         Returns
         -------
@@ -116,10 +124,24 @@ class QA4SMImg(object):
             A dataframe that contains all variables that describe the metric
             in the column
         """
-        for metric_group in [self.common, self.double, self.triple]:
+        for g, metric_group in {0: self.common, 2: self.double, 3: self.triple}.items():
             if metric in metric_group.keys():
-                conc = [Var.data for Var in metric_group[metric]]
-                return pd.concat(conc, axis=1)
+                if g != 3:
+                    conc = [Var.values for Var in metric_group[metric]]
+                    return pd.concat(conc, axis=1)
+                else:
+                    mds_df = {}
+                    for Var in metric_group[metric]:
+                        _, _, mds_meta = Var.get_varmeta()
+                        k = (mds_meta[0], mds_meta[1]['short_name'], mds_meta[1]['short_version'])
+                        if k not in mds_df.keys():
+                            mds_df[k] = [Var.values]
+                        else:
+                            mds_df[k].append(Var.values)
+                    ret = []
+                    for k, dflist in mds_df.items():
+                        ret.append(pd.concat(dflist, axis=1))
+                    return ret
 
     def find_group(self, src):
         """
@@ -140,12 +162,47 @@ class QA4SMImg(object):
                 return metric_group
         for metric_group in [self.common, self.double, self.triple]:
             for metric in metric_group.keys():
-                if src in [Var.name for Var in metric_group[metric]]:
+                if src in [Var.varname for Var in metric_group[metric]]:
                     return metric_group
+
+    def ref_meta(self) -> tuple:
+        """ Go through all variables and check if the reference dataset is the same """
+        ref_meta = None
+        for metric_group in [self.common, self.double, self.triple]:
+            for metric, vars in metric_group.items():
+                for Var in vars:
+                    if ref_meta is None:
+                        ref_meta, _, _ = Var.get_varmeta()
+                    else:
+                        new_ref_meta, _, _ = Var.get_varmeta()
+                        assert new_ref_meta == ref_meta
+        return ref_meta
+
+    def var_meta(self, varname):
+        """
+        Get the metric and metadata for a single variable.
+
+        Parameters
+        --------
+        varname : str
+            The variable that is looked up
+
+        Returns
+        -------
+        var_meta : dict
+            metric as the key and ref_meta, dss_meta and mds_meta as the
+            values.
+        """
+
+        metr_group = self.find_group(varname)
+        for metric, vars in metr_group.items():
+            for Var in vars:
+                if Var.varname == varname:
+                    return {Var.metric: Var.get_varmeta()}
 
     def metric_meta(self, metric):
         """
-        Get the meta data for all variables that describe the passed metric.
+        Get the meta values for all variables that describe the passed metric.
 
         Parameters
         ----------
@@ -161,13 +218,13 @@ class QA4SMImg(object):
         group = self.find_group(metric)
         metvar_meta = {}
         for Var in group[metric]:
-            metvar_meta[Var.name] = Var.get_varmeta()
+            metvar_meta[Var.varname] = Var.get_varmeta()
         return metvar_meta
 
     def parse_filename(self):
         """
         Parse filename and derive the validation datasets. Relies on the separator
-        between data sets in the filename from the globals.
+        between values sets in the filename from the globals.
 
         Parameters
         ----------
@@ -176,7 +233,7 @@ class QA4SMImg(object):
 
         Returns
         -------
-        ds_and_vers : list
+        ds_and_vers : dict
             The parsed datasets and version from the file name.
         """
         filename = os.path.basename(self.filepath)
@@ -201,17 +258,17 @@ class QA4SMImg(object):
             The (grouped) metrics in the current file.
         """
 
-        single = [m for m in self.common.keys()]
+        common = [m for m in self.common.keys()]
         double = [m for m in self.double.keys()]
         triple = [m for m in self.triple.keys()]
 
         if as_groups:
-            return OrderedDict([('common', single), ('double', double),
+            return OrderedDict([('common', common), ('double', double),
                                 ('triple', triple)])
         else:
-            return sorted(single + double + triple)
+            return np.sort(np.array(common + double + triple))
 
-    def ls_vars(self):
+    def ls_vars(self, as_groups=True):
         """
         Get a list of VARIABLES (except gpi, lon, lat) of the current file.
 
@@ -228,47 +285,29 @@ class QA4SMImg(object):
             Alphabetically sorted variables in the file (except gpi, lon, lat),
             optionally without the empty variables.
         """
-        varnames = []
-        for metric_group in [self.common, self.double, self.triple]:
+        common, double, triple = None, None, None
+        for g, metric_group in zip((0,2,3), (self.common, self.double, self.triple)):
+            varnames = []
             for metric in metric_group.keys():
                 for Var in metric_group[metric]:
-                    varnames.append(Var.name)
-        return sorted(varnames)
+                    varnames.append(Var.varname)
+            if g == 0:
+                common = varnames
+            elif g == 2:
+                double = varnames
+            elif g == 3:
+                triple = varnames
+            else:
+                raise NotImplementedError
+
+        if as_groups:
+            return OrderedDict([('common', common), ('double', double),
+                                ('triple', triple)])
+        else:
+            return np.sort(np.array(common + double + triple))
 
 if __name__ == '__main__':
-    path = r'H:\code\qa4sm-reader\tests\test_data\basic\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-SMOS.Soil_Moisture.nc'
+    path = r'H:\code\qa4sm-reader\tests\test_data\tc\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-ASCAT.sm.nc'
     # 6-ISMN.soil moisture_with_1-C3S.sm_with_2-C3S.sm_with_3-SMOS.Soil_Moisture_with_4-SMAP.soil_moisture_with_5-ASCAT.sm.nc'
     img = QA4SMImg(path)
-    vars = img.ls_vars()
-    metrics = img.ls_metrics(as_groups=True)
-    img.metric_meta('BIAS')
-    
-
-"""
-class QA4SMDataAttributes(object):
-    def __init__(self, short_name, pretty_name, short_version, pretty_version,
-                 varnum):
-        self.name = name
-        self.version = version
-        self.varnum = varnum
-
-    def add_meta(self, short_name, pretty_name, pretty_version):
-        if short_name != self.name:
-            raise ValueError()
-        self.meta = {'short_name' : short_name,
-                     'pretty_name' : pretty_name,
-                     'pretty_version' : pretty_version}
-
-
-    def is_scattered(self):
-        if self.name in globals.scattered_datasets:
-            return True
-
-    def pretty_name(self):
-        NotImplementedError
-
-if __name__ == '__main__':
-    ds = xr.open_dataset(
-        r"H:\code\qa4sm-reader\tests\test_data\6-ISMN.soil moisture_with_1-C3S.sm_with_2-C3S.sm_with_3-SMOS.Soil_Moisture_with_4-SMAP.soil_moisture_with_5-ASCAT.sm.nc")
-    meta = QA4SMAttributes(global_attrs=ds.attrs)
-"""
+    img.metric_df('snr')

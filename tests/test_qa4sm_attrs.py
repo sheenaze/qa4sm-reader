@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from src.qa4sm_reader.handlers import QA4SMAttributes, QA4SMDataAttributes, QA4SMMetricVariable
+from src.qa4sm_reader.handlers import QA4SMAttributes, QA4SMNamedAttributes, QA4SMMetricVariable
 import os
 import unittest
 import xarray as xr
@@ -25,7 +25,7 @@ class TestQA4SMAttributes(unittest.TestCase):
 
     def test_get_ref_name(self):
         ref_names = self.meta.get_ref_names()
-        assert ref_names['short_name'] == 'ISMN'
+        assert ref_names['__short_name'] == 'ISMN'
         assert ref_names['pretty_name'] == 'ISMN'
         assert ref_names['short_version'] == 'ISMN_V20180712_MINI'
         assert ref_names['pretty_version'] == '20180712 mini testset'
@@ -33,28 +33,28 @@ class TestQA4SMAttributes(unittest.TestCase):
 
     def test_get_other_names(self):
         other_names = self.meta.get_other_names()
-        # index is dc, as in the meta data not as in the variable name
-        assert other_names[0]['short_name'] == 'C3S'
+        # index is dc, as in the meta values not as in the variable name
+        assert other_names[0]['__short_name'] == 'C3S'
         assert other_names[0]['pretty_name'] == 'C3S'
         assert other_names[0]['short_version'] == 'C3S_V201706'
         assert other_names[0]['pretty_version'] == 'v201706'
 
-        assert other_names[1]['short_name'] == 'C3S'
+        assert other_names[1]['__short_name'] == 'C3S'
         assert other_names[1]['pretty_name'] == 'C3S'
         assert other_names[1]['short_version'] == 'C3S_V201812'
         assert other_names[1]['pretty_version'] == 'v201812'
 
-        assert other_names[2]['short_name'] == 'SMOS'
+        assert other_names[2]['__short_name'] == 'SMOS'
         assert other_names[2]['pretty_name'] == 'SMOS IC'
         assert other_names[2]['short_version'] == 'SMOS_105_ASC'
         assert other_names[2]['pretty_version'] == 'V.105 Ascending'
 
-        assert other_names[3]['short_name'] == 'SMAP'
+        assert other_names[3]['__short_name'] == 'SMAP'
         assert other_names[3]['pretty_name'] == 'SMAP level 3'
         assert other_names[3]['short_version'] == 'SMAP_V5_PM'
         assert other_names[3]['pretty_version'] == 'v5 PM/ascending'
 
-        assert other_names[4]['short_name'] == 'ASCAT'
+        assert other_names[4]['__short_name'] == 'ASCAT'
         assert other_names[4]['pretty_name'] == 'H-SAF ASCAT SSM CDR'
         assert other_names[4]['short_version'] == 'ASCAT_H113'
         assert other_names[4]['pretty_version'] == 'H113'

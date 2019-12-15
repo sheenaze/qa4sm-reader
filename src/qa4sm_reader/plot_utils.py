@@ -40,7 +40,7 @@ def _value2index(a, a_min, da):
 def geotraj_to_geo2d(df, var, index=globals.index_names):
     """
     Converts geotraj (list of lat, lon, value) to a regular grid over lon, lat.
-    The data in df needs to be sampled from a regular grid, the order does not matter.
+    The values in df needs to be sampled from a regular grid, the order does not matter.
     When used with plt.imshow(), specify data_extent to make sure, 
     the pixels are exactly where they are expected.
     
@@ -57,7 +57,7 @@ def geotraj_to_geo2d(df, var, index=globals.index_names):
     Returns
     -------
     zz : numpy.ndarray
-        array holding the gridded data. When using plt.imshow, specify origin='lower'.
+        array holding the gridded values. When using plt.imshow, specify origin='lower'.
         [0,0] : llc (lower left corner)
         first coordinate is longitude.
     data_extent : tuple
@@ -84,13 +84,13 @@ def get_value_range(ds, metric=None, offset_q01=0.01):
     """
     Get the value range (v_min, v_max) from globals._metric_value_ranges
     If the range is (None, None), a symmetric range around 0 is created,
-    showing at least the symmetric <quantile> quantile of the data. 
+    showing at least the symmetric <quantile> quantile of the values.
     if force_quantile is True, the quantile range is used.
 
     Parameters
     ----------
     ds : pd.DataFrame or pd.Series
-        Series holding the data
+        Series holding the values
     metric : str , optional (default: None)
         name of the metric (e.g. 'R'). None equals to force_quantile=True.
     offset_q01 : float
@@ -140,9 +140,9 @@ def get_quantiles(ds, quantiles):
     Parameters
     ----------
     ds : (pandas.Series | pandas.DataFrame)
-        Input data.
+        Input values.
     quantiles : list
-        quantile of data to include in the range
+        quantile of values to include in the range
 
     Returns
     -------
@@ -162,15 +162,15 @@ def get_quantiles(ds, quantiles):
 
 def get_plot_extent(df, grid=False):
     """
-    Gets the plot_extent from the data. Uses range of data and 
+    Gets the plot_extent from the values. Uses range of values and
     adds a padding fraction as specified in globals.map_pad
 
     Parameters
     ----------
     grid : bool
-        whether the data in df is on a equally spaced grid (for use in mapplot)
+        whether the values in df is on a equally spaced grid (for use in mapplot)
     df : pandas.DataFrame
-        Plot data.
+        Plot values.
     
     Returns
     -------
@@ -188,7 +188,7 @@ def get_plot_extent(df, grid=False):
                   df.index.get_level_values(lat).min(), df.index.get_level_values(lat).max()]
     dx = extent[1] - extent[0]
     dy = extent[3] - extent[2]
-    # set map-padding around data to be globals.map_pad percent of the smaller dimension
+    # set map-padding around values to be globals.map_pad percent of the smaller dimension
     padding = min(dx, dy) * globals.map_pad / (1 + globals.map_pad)
     extent[0] -= padding
     extent[1] += padding
@@ -298,7 +298,7 @@ def style_map(ax, plot_extent, add_grid=True, map_resolution=globals.naturaleart
         ax.add_feature(cfeature.STATES, linewidth=0.1, zorder=3)
 
 
-def make_watermark(fig, placement=globals.watermark_pos):
+def make_watermark(fig, placement=globals.watermark_pos, for_map=False, offset=0.02):
     """
     Adds a watermark to fig and adjusts the current axis to make sure there
     is enough padding around the watermarks.
@@ -319,21 +319,22 @@ def make_watermark(fig, placement=globals.watermark_pos):
     fontsize = globals.watermark_fontsize
     pad = globals.watermark_pad
     height = fig.get_size_inches()[1]
-    offset = (((fontsize + pad) / globals.matplotlib_ppi) / height) * 2.2
+    offset = offset + (((fontsize + pad) / globals.matplotlib_ppi) / height) * 2.2
     if placement == 'top':
-        plt.annotate(s=globals.watermark, xy=[1, 1], xytext=[-pad, -pad],
+        plt.annotate(s=globals.watermark, xy=[0.5, 1], xytext=[-pad, -pad],
                      fontsize=fontsize, color='grey',
-                     horizontalalignment='right', verticalalignment='top',
+                     horizontalalignment='center', verticalalignment='top',
                      xycoords='figure fraction', textcoords='offset points')
         top = fig.subplotpars.top
         fig.subplots_adjust(top=top - offset)
     elif placement == 'bottom':
-        plt.annotate(s=globals.watermark, xy=[0, 0], xytext=[pad, pad],
+        plt.annotate(s=globals.watermark, xy=[0.5, 0], xytext=[pad, pad],
                      fontsize=fontsize, color='grey',
-                     horizontalalignment='left', verticalalignment='bottom',
+                     horizontalalignment='center', verticalalignment='bottom',
                      xycoords='figure fraction', textcoords='offset points')
         bottom = fig.subplotpars.bottom
-        fig.subplots_adjust(bottom=bottom + offset)  # defaults to rc when none!
+        if not for_map:
+            fig.subplots_adjust(bottom=bottom + offset)  # defaults to rc when none!
     else:
         raise NotImplementedError
 

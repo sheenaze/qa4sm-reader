@@ -14,17 +14,17 @@ title_pad = 12.0  # Padding below the title in points. default padding is matplo
 data_crs = ccrs.PlateCarree()  # Default map projection. use one of
 
 # === map plot defaults ===
-scattered_datasets = ['ISMN']  # dataset names which require scatterplots (data is scattered in lat/lon)
+scattered_datasets = ['ISMN']  # dataset names which require scatterplots (values is scattered in lat/lon)
 map_figsize = [11.32, 6.10]  # size of the output figure in inches.
 naturalearth_resolution = '110m'  # One of '10m', '50m' and '110m'. Finer resolution slows down plotting. see https://www.naturalearthdata.com/
 crs = ccrs.PlateCarree()  # projection. Must be a class from cartopy.crs. Note, that plotting labels does not work for most projections.
 markersize = 4  # diameter of Marker in points.
 map_pad = 0.15  # padding relative to map height.
 grid_intervals = [0.25, 0.5, 1, 2, 5, 10, 30]  # grid spacing in degree to choose from (plotter will try to make 5 gridlines in the smaller dimension)
-max_title_len = 50  # maximum length of plot title in chars. if longer, it will be broken in multiple lines.
+max_title_len = 8 * map_figsize[0]  # maximum length of plot title in chars. if longer, it will be broken in multiple lines.
 
-# === boxplot defaults ===
-boxplot_printnumbers = True  # Print 'median', 'nObs', 'stdDev' to the boxplot.
+# === boxplot_basic defaults ===
+boxplot_printnumbers = True  # Print 'median', 'nObs', 'stdDev' to the boxplot_basic.
 boxplot_figsize = [6.30, 4.68]  # size of the output figure in inches. NO MORE USED.
 boxplot_height = 4.68
 boxplot_width = 1.7  # times (n+1), where n is the number of boxes.
@@ -33,7 +33,7 @@ boxplot_title_len = 8 * boxplot_width  # times the number of boxes. maximum leng
 # === watermark defaults ===
 watermark = u'made with QA4SM (qa4sm.eodc.eu)'  # Watermark string
 watermark_pos = 'bottom'  # Default position ('top' or 'bottom' or None)
-watermark_fontsize = 10  # fontsize in points (matplotlib uses 72ppi)
+watermark_fontsize = 8  # fontsize in points (matplotlib uses 72ppi)
 watermark_pad = 5  # padding above/below watermark in points (matplotlib uses 72ppi)
 
 # === filename template ===
@@ -70,8 +70,9 @@ var_name_metric_sep = {0 : "{metric}", 2 : "{metric}_between_",
 var_name_ds_sep = {0: None, 2: "{ref_id:d}-{ref_ds}_and_{sat_id0:d}-{sat_ds0}",
                    3: "{ref_id:d}-{ref_ds}_and_{sat_id0:d}-{sat_ds0}_and_{sat_id1:d}-{sat_ds1}"}
 
+_offset_id_dc = -1
 # === metadata tempplates ===
-_ref_ds_attr = 'val_ref' # global meta data variable that links to the reference dc
+_ref_ds_attr = 'val_ref' # global meta values variable that links to the reference dc
 _ds_short_name_attr = 'val_dc_dataset{:d}' # attribute convention for other datasets
 _ds_pretty_name_attr = 'val_dc_dataset_pretty_name{:d}' # attribute convention for other datasets
 _version_short_name_attr = 'val_dc_version{:d}' # attribute convention for other datasets
@@ -201,7 +202,7 @@ _dataset_pretty_names = {  # from qa4sm\validator\fixtures\datasets.json
     'SMOS': r'SMOS IC'
 }
 
-# fallback for dataset version pretty names in case they are not in the metadata
+# fallback for dataset __version pretty names in case they are not in the metadata
 _dataset_version_pretty_names = {  # from qa4sm\validator\fixtures\versions.json
     "C3S_V201706": "v201706",
     "C3S_V201812": "v201812",

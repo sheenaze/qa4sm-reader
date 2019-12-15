@@ -38,7 +38,7 @@ class TestQA4SMMetaImgBasicPlotter(unittest.TestCase):
         self.img._ds_pretty_names(varmeta['R_between_3-ERA5_LAND_and_1-C3S'])
         assert ref_pretty == 'ERA5-Land'
         assert ref_version_pretty == 'v20190904'
-        assert ds_pretty == ['C3S'] # Only the ref and one sat data
+        assert ds_pretty == ['C3S'] # Only the ref and one sat values
         assert ds_version_pretty == ['v201812']
 
     def test_boxplot(self):
@@ -46,8 +46,8 @@ class TestQA4SMMetaImgBasicPlotter(unittest.TestCase):
         for metric in metrics:
             #dirpath = tempfile.mkdtemp()
             dirpath = r'C:\Temp\qa4smreader_plots\test\boxes'
-            self.img.boxplot(metric, out_dir=dirpath, out_name=None, out_type='png')
-            self.img.boxplot(metric, out_dir=dirpath, out_name=None, out_type='svg')
+            self.img.boxplot_basic(metric, out_dir=dirpath, out_name=None, out_type='png')
+            self.img.boxplot_basic(metric, out_dir=dirpath, out_name=None, out_type='svg')
 
     def test_mapplot(self):
         vars = self.img.vars_in_file(True)
