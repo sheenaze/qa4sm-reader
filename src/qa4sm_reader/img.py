@@ -6,8 +6,8 @@ from parse import *
 import os
 import numpy as np
 from collections import OrderedDict
-from src.qa4sm_reader.handlers import _build_fname_templ
-from src.qa4sm_reader.handlers import QA4SMMetricVariable
+from qa4sm_reader.handlers import _build_fname_templ
+from qa4sm_reader.handlers import QA4SMMetricVariable
 import pandas as pd
 import itertools
 
@@ -15,7 +15,6 @@ class QA4SMImg(object):
     """
     A QA4SM validation results netcdf image.
     """
-
     def __init__(self, filepath, extent=None, ignore_empty=True, metrics=None,
                  index_names=globals.index_names):
         """

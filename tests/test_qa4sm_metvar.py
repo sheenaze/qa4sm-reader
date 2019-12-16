@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from src.qa4sm_reader.handlers import QA4SMMetricVariable
+from qa4sm_reader.handlers import QA4SMMetricVariable
 import unittest
 from tests.test_qa4sm_attrs import test_tc_attributes, test_attributes
 import pandas as pd
@@ -19,7 +19,8 @@ class TestMetricVariableTC(unittest.TestCase):
         assert self.n_obs.ismetr()
         assert not self.n_obs.isempty()
         ref, dss, mds = self.n_obs.get_varmeta()
-        assert ref == dss == mds is None
+        assert ref[1]['short_name'] == 'ERA5_LAND'
+        assert dss == mds is None
 
         # R
         ref, dss, mds = self.r.get_varmeta()
@@ -72,7 +73,7 @@ class TestMetricVariableBasic(unittest.TestCase):
     def setUp(self) -> None:
         attrs = test_attributes()
         df_nobs = pd.DataFrame(index=range(10), data={'n_obs': range(10)})
-        self.n_obs = QA4SMMetricVariable('n_obs', attrs, data=df_nobs)
+        self.n_obs = QA4SMMetricVariable('n_obs', attrs, values=df_nobs)
 
         self.r = QA4SMMetricVariable('R_between_6-ISMN_and_4-SMAP', attrs)
         self.pr = QA4SMMetricVariable('p_rho_between_6-ISMN_and_5-ASCAT', attrs)
@@ -83,7 +84,8 @@ class TestMetricVariableBasic(unittest.TestCase):
         assert not self.n_obs.isempty()
         # todo: use the names from metadata?
         ref, dss, mds = self.n_obs.get_varmeta()
-        assert ref == dss == mds is None
+        assert ref[1]['short_name'] == 'ISMN'
+        assert dss == mds is None
 
         # R
         ref, dss, mds = self.r.get_varmeta()
@@ -118,7 +120,8 @@ class TestMetricVariableBasic(unittest.TestCase):
         assert mds is None
 
 if __name__ == '__main__':
-    suite = unittest.TestSuite()
-    suite.addTest(TestMetricVariableTC("test_get_varmeta"))
-    runner = unittest.TextTestRunner()
-    runner.run(suite)
+    unittest.main()
+    # suite = unittest.TestSuite()
+    # suite.addTest(TestMetricVariableTC("test_get_varmeta"))
+    # runner = unittest.TextTestRunner()
+    # runner.run(suite)

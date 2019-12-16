@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from src.qa4sm_reader.img import QA4SMImg
+from qa4sm_reader.img import QA4SMImg
 import os
 import seaborn as sns
 from qa4sm_reader.plot_utils import *

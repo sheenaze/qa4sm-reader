@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from src.qa4sm_reader.img import QA4SMImg
+from qa4sm_reader.img import QA4SMImg
 import os
 import numpy as np
 import unittest
-from src.qa4sm_reader import globals
+from qa4sm_reader import globals
 
 class TestQA4SMImgBasicIntercomp(unittest.TestCase):
 
@@ -15,7 +15,6 @@ class TestQA4SMImgBasicIntercomp(unittest.TestCase):
         self.img = QA4SMImg(self.testfile_path, ignore_empty=False)
 
     def test_parse_filename(self):
-        print('test_parse_filename')
         ds_and_vars = self.img.parse_filename()
         assert ds_and_vars['i_ref'] == 3
         assert ds_and_vars['i_ds1'] == 1
@@ -37,15 +36,14 @@ class TestQA4SMImgBasicIntercomp(unittest.TestCase):
             assert any([m in l for l in list(globals.metric_groups.values())])
 
     def test_vars_in_file(self):
-        print('test_vars_in_file')
-        vars = self.img.ls_vars()
+        vars = self.img.ls_vars(False)
         vars_should = ['n_obs']
         for metric in globals.metric_groups[2]:
             vars_should.append('{}_between_3-ERA5_LAND_and_1-C3S'.format(metric))
             vars_should.append('{}_between_3-ERA5_LAND_and_2-SMOS'.format(metric))
         vars_should = np.sort(np.array(vars_should))
         assert all(vars == vars_should)
-        vars = self.img.ls_vars()
+        vars = self.img.ls_vars(False)
         assert len(vars) <= len(vars_should)
 
 
@@ -76,8 +74,8 @@ class TestQA4SMImgBasicIntercomp(unittest.TestCase):
             assert len(meta[1]) == 1
             assert meta[2] is None
         obs_meta = self.img.metric_meta('n_obs')
-        assert obs_meta['n_obs'][0] == obs_meta['n_obs'][1] == \
-               obs_meta['n_obs'][2] == None
+        assert obs_meta['n_obs'][0][1]['short_name'] == 'ERA5_LAND'
+        assert  obs_meta['n_obs'][1] == obs_meta['n_obs'][2] == None
 
     def test_ref_meta(self):
         ref_meta = self.img.ref_meta()
@@ -91,7 +89,9 @@ class TestQA4SMImgBasicIntercomp(unittest.TestCase):
         meta = self.img.var_meta('n_obs')
         assert list(meta.keys()) == ['n_obs']
         meta = meta['n_obs']
-        assert meta == (None, None, None)
+        assert meta[0][1]['short_name'] == 'ERA5_LAND'
+        assert meta[0][1]['pretty_name'] == 'ERA5-Land'
+        assert meta[1] ==  meta[2] == None
 
         meta = self.img.var_meta('R_between_3-ERA5_LAND_and_1-C3S')
         assert list(meta.keys()) == ['R']
@@ -111,6 +111,6 @@ class TestQA4SMImgBasicIntercomp(unittest.TestCase):
 
 if __name__ == '__main__':
     suite = unittest.TestSuite()
-    suite.addTest(TestQA4SMImgBasicIntercomp("test_var_meta"))
+    suite.addTest(TestQA4SMImgBasicIntercomp("test_vars_in_file"))
     runner = unittest.TextTestRunner()
     runner.run(suite)

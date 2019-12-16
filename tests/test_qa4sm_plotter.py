@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from src.qa4sm_reader.plotter import QA4SMPlotter
-from src.qa4sm_reader.img import QA4SMImg
+from qa4sm_reader.plotter import QA4SMPlotter
+from qa4sm_reader.img import QA4SMImg
 import os
 import unittest
 import tempfile
+import shutil
 
 class TestQA4SMMetaImgBasicPlotter(unittest.TestCase):
 
@@ -38,7 +39,7 @@ class TestQA4SMMetaImgBasicPlotter(unittest.TestCase):
         assert len(os.listdir(self.plotdir)) == 1 + 2 + 2 +2 +2
         assert len(list(err_files)) == 2
 
-        os.rmdir(self.plotdir)
+        shutil.rmtree(self.plotdir)
 
     def test_boxplot(self):
         n_obs_files = self.plotter.boxplot_basic('n_obs', out_type='png') # should be 1
@@ -61,7 +62,8 @@ class TestQA4SMMetaImgBasicPlotter(unittest.TestCase):
         assert len(os.listdir(self.plotdir)) == 1 + 1 + 1 + 2 + 2
         assert len(list(err_files)) == 2
 
-        os.rmdir(self.plotdir)
+        shutil.rmtree(self.plotdir)
+
 
 
 

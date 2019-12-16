@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from src.qa4sm_reader.handlers import QA4SMNamedAttributes
+from qa4sm_reader.handlers import QA4SMNamedAttributes
 from tests.test_qa4sm_attrs import test_attributes
 import unittest
 
