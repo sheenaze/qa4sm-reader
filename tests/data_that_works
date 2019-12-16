@@ -1,0 +1,9 @@
+era5 test
+    ascat or smos or c3s_2018
+    c3s_2018 and smos and ascat
+era5_land test
+    c3s_2018 or ascat
+    c3s_2018 and ascat
+    NOT WORKING smos
+ismn_2019_global
+    c3s_2018

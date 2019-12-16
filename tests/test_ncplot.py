@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-
+import qa4sm_reader.plot_all
+import qa4sm_reader.img
 
 __author__ = "Lukas Racbhauer"
 __copyright__ = "2019, TU Wien, Department of Geodesy and Geoinformation"
@@ -21,12 +22,10 @@ Missing:
     
 """
 
-
-from qa4sm_reader import ncplot
+from qa4sm_reader.old import ncplot
 import pandas as pd
 import numpy as np
 import os
-import pytest
 from pandas.util.testing import assert_frame_equal
 import warnings
 EXTENT_GRID = (-6.2, -5.3, 56, 58)  # GB, Scotland
@@ -52,8 +51,8 @@ def get_path(case):
         testfile = '3-GLDAS.SoilMoi0_10cm_inst_with_1-C3S.sm_with_2-ESA_CCI_SM_combined.sm.nc'
         # testfile = '4-GLDAS.SoilMoi0_10cm_inst_with_1-ESA_CCI_SM_combined.sm_with_2-SMAP.soil_moisture_with_3-SMOS.Soil_Moisture.nc'
         return os.path.join(os.path.dirname(__file__), 'test_data', testfile)
-    elif case == 'boxplot':
-        return os.path.join(os.path.dirname(__file__), 'test_results', 'boxplot')
+    elif case == 'boxplot_basic':
+        return os.path.join(os.path.dirname(__file__), 'test_results', 'boxplot_basic')
     elif case == 'mapplot':
         return os.path.join(os.path.dirname(__file__), 'test_results', 'mapplot')
     elif case == 'plot_all':
@@ -87,7 +86,7 @@ def test_load_data():
     exp_index = [0, 1]
     exp_columns = ['lat', 'lon', 'R_between_6-ISMN_2-SMAP', 'R_between_6-ISMN_3-ASCAT']
     exp_result = pd.DataFrame(exp_data, exp_index, exp_columns)
-    df = ncplot.load_data(filepath, variables, extent=EXTENT_SCATTER)
+    df = qa4sm_reader.img.load_data(filepath, variables, extent=EXTENT_SCATTER)
     assert_frame_equal(df, exp_result)
 
 
@@ -97,7 +96,7 @@ def test_get_varmeta():
     exp_result = {'R_between_3-ISMN_1-C3S':
                       {'metric': 'R',
                        'ref_no': 3, 'ref': 'ISMN',
-                       'ds_no': 1, 'ds': 'C3S', 'ds_pretty_name': 'C3S',
+                       'ds_no': 1, 'ds': 'C3S', 'short_to_pretty': 'C3S',
                        'ds_version': 'C3S_V201812', 'ds_version_pretty_name': 'v201812',
                        'ref_pretty_name': 'ISMN', 'ref_version': 'ISMN_V20180712_TEST',
                        'ref_version_pretty_name': '20180712 testset'},
@@ -105,7 +104,7 @@ def test_get_varmeta():
                       {'metric': 'R',
                        'ref_no': 3, 'ref': 'ISMN',
                        'ds_no': 2, 'ds': 'ESA_CCI_SM_combined',
-                       'ds_pretty_name': 'ESA CCI SM combined',
+                       'short_to_pretty': 'ESA CCI SM combined',
                        'ds_version': 'ESA_CCI_SM_C_V04_4', 'ds_version_pretty_name': 'v04.4',
                        'ref_pretty_name': 'ISMN', 'ref_version': 'ISMN_V20180712_TEST',
                        'ref_version_pretty_name': '20180712 testset'}}
@@ -115,7 +114,7 @@ def test_get_varmeta():
 def test_get_meta():
     filepath = get_path('ISMN')
     var = 'R_between_3-ISMN_1-C3S'
-    exp_result = {'metric': 'R', 'ref_no': 3, 'ref': 'ISMN', 'ds_no': 1, 'ds': 'C3S', 'ds_pretty_name': 'C3S',
+    exp_result = {'metric': 'R', 'ref_no': 3, 'ref': 'ISMN', 'ds_no': 1, 'ds': 'C3S', 'short_to_pretty': 'C3S',
                   'ds_version': 'C3S_V201812', 'ds_version_pretty_name': 'v201812', 'ref_pretty_name': 'ISMN',
                   'ref_version': 'ISMN_V20180712_TEST', 'ref_version_pretty_name': '20180712 testset'}
     assert ncplot.get_meta(filepath, var) == exp_result
@@ -141,7 +140,7 @@ def test_load():
     exp_varmeta = {'R_between_3-ISMN_1-C3S':
                       {'metric': 'R',
                        'ref_no': 3, 'ref': 'ISMN',
-                       'ds_no': 1, 'ds': 'C3S', 'ds_pretty_name': 'C3S',
+                       'ds_no': 1, 'ds': 'C3S', 'short_to_pretty': 'C3S',
                        'ds_version': 'C3S_V201812', 'ds_version_pretty_name': 'v201812',
                        'ref_pretty_name': 'ISMN', 'ref_version': 'ISMN_V20180712_TEST',
                        'ref_version_pretty_name': '20180712 testset'},
@@ -149,11 +148,11 @@ def test_load():
                       {'metric': 'R',
                        'ref_no': 3, 'ref': 'ISMN',
                        'ds_no': 2, 'ds': 'ESA_CCI_SM_combined',
-                       'ds_pretty_name': 'ESA CCI SM combined',
+                       'short_to_pretty': 'ESA CCI SM combined',
                        'ds_version': 'ESA_CCI_SM_C_V04_4', 'ds_version_pretty_name': 'v04.4',
                        'ref_pretty_name': 'ISMN', 'ref_version': 'ISMN_V20180712_TEST',
                        'ref_version_pretty_name': '20180712 testset'}}
-    df, varmeta = ncplot.load(filepath, metric, extent=EXTENT_SCATTER)
+    df, varmeta = qa4sm_reader.img.load(filepath, metric, extent=EXTENT_SCATTER)
     assert varmeta == exp_varmeta
     assert_frame_equal(df, exp_df)
 
@@ -185,7 +184,7 @@ def test_boxplot_GLDAS_nan_default():
 
 
 def test_boxplot_GLDAS_options():
-    out_dir = get_path('boxplot')
+    out_dir = get_path('boxplot_basic')
     filepath = get_path('GLDAS')
     out_name = 'test_boxplot_GLDAS_options'
     variables = ncplot.get_variables(filepath, 'R')[:-1]
@@ -197,7 +196,7 @@ def test_boxplot_GLDAS_options():
 
 def test_boxplot_ISMN_extent():
     filepath = get_path('ISMN')
-    out_dir = get_path('boxplot')
+    out_dir = get_path('boxplot_basic')
     out_name = 'test_boxplot_ISMN_extent'
     out_type = 'png'
     ncplot.boxplot(filepath, 'R', EXTENT_SCATTER, out_dir, out_name, out_type)
@@ -206,7 +205,7 @@ def test_boxplot_ISMN_extent():
 
 def test_boxplot_GLDAS_nan_extent():
     filepath = get_path('GLDAS_nan')
-    out_dir = get_path('boxplot')
+    out_dir = get_path('boxplot_basic')
     out_name = 'test_boxplot_GLDAS_nan_extent'
     ncplot.boxplot(filepath, 'R', EXTENT_GRID, out_dir, out_name)
     warnings.warn('Test does not assert output images. Have a look at {}.'.format(out_dir))
@@ -263,6 +262,6 @@ def test_mapplot_GLDAS_extent():  # TODO: find out why it takes 12s to produce t
 
 def test_plot_all_extent():
     filepath = get_path('GLDAS')
-    ncplot.plot_all(filepath, metrics={'n_obs', 'R', 'ubRMSD'}, extent=EXTENT_GRID,
-                    boxplot_kwargs={'watermark_pos': None}, mapplot_kwargs={'dpi': 70})
+    qa4sm_reader.plot_all.plot_all(filepath, metrics={'n_obs', 'R', 'ubRMSD'}, extent=EXTENT_GRID,
+                                   boxplot_kwargs={'watermark_pos': None}, mapplot_kwargs={'dpi': 70})
     warnings.warn('Test does not assert output images.')

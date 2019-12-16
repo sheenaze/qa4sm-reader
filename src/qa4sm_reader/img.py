@@ -1,0 +1,313 @@
+# -*- coding: utf-8 -*-
+
+import xarray as xr
+from qa4sm_reader import globals
+from parse import *
+import os
+import numpy as np
+from collections import OrderedDict
+from src.qa4sm_reader.handlers import _build_fname_templ
+from src.qa4sm_reader.handlers import QA4SMMetricVariable
+import pandas as pd
+import itertools
+
+class QA4SMImg(object):
+    """
+    A QA4SM validation results netcdf image.
+    """
+
+    def __init__(self, filepath, extent=None, ignore_empty=True, metrics=None,
+                 index_names=globals.index_names):
+        """
+        Initialise a common QA4SM results image.
+
+        Parameters
+        ----------
+        filepath : str
+            Path to the results netcdf file (as created by QA4SM)
+        extent : tuple, optional (default: None)
+            Area to subset the values for.
+            (min_lon, max_lon, min_lat, max_lat)
+        ignore_empty : bool, optional (default: True)
+            Ignore empty variables in the file.
+        metrics : list or None, optional (default: None)
+            Subset of the metrics to load from file, if None are passed, all
+            are loaded.
+        index_names : list, optional (default: ['lat', 'lon'] - as in globals.py)
+            Names of dimension variables in x and y direction (lat, lon).
+        """
+        self.filepath = filepath
+        self.filename = os.path.basename(self.filepath)
+
+        self.extent = extent
+        self.index_names = index_names
+
+        self.ignore_empty = ignore_empty
+        self.ds = xr.load_dataset(self.filepath)
+
+        self.common, self.double, self.triple = self._load_metrics_from_file(metrics)
+
+    def _load_metrics_from_file(self, metrics:list=None) -> (dict, dict, dict):
+        """ Load and group all metrics from file """
+
+        common, double, triple = dict(), dict(), dict()
+        if metrics is None:
+            metrics = list(itertools.chain(*list(globals.metric_groups.values())))
+        for metric in metrics:
+            # todo: loading every single variable is slow
+            metr_vars = self._load_metric_from_file(metric)
+            if len(metr_vars) > 0:
+                if metric in globals.metric_groups[2]:
+                    double[metric] = metr_vars
+                elif metric in globals.metric_groups[3]:
+                    triple[metric] = metr_vars
+                else:
+                    common[metric] = metr_vars
+
+        return common, double, triple
+
+    def _load_metric_from_file(self, metric:str) -> np.array:
+        """ Load all variables that describe the metric from file. """
+
+        all_vars = np.sort(np.array(list(self.ds.variables.keys())))
+        metr_vars = []
+        for var in all_vars:
+            Var = self._load_var(var)
+            if Var is not None and (Var.metric == metric):
+                if self.ignore_empty:
+                    if not Var.isempty():
+                        metr_vars.append(Var)
+                else:
+                    metr_vars.append(Var)
+
+        return np.array(metr_vars)
+
+    def _load_var(self, varname:str) -> (QA4SMMetricVariable or None):
+        """ Create a common variable and fill it with values """
+        try:
+            vardata = self._ds2df([varname])
+            Var = QA4SMMetricVariable(varname, self.ds.attrs, values=vardata)
+            return Var
+        except IOError:
+            return None
+
+    def _ds2df(self, varnames:list) -> pd.DataFrame:
+        """ Cut a variable to extent and return it as a values frame """
+        try:
+            df = self.ds[self.index_names + varnames].to_dataframe()
+        except KeyError as e:
+            raise Exception(
+                'The given variable ' + ', '.join(varnames) +
+                ' do not match the names in the input values.' + str(e))
+        df.dropna(axis='index', subset=varnames, inplace=True)
+        if self.extent:  # === geographical subset ===
+            lat, lon = globals.index_names
+            df = df[(df[lon] >= self.extent[0]) & (df[lon] <= self.extent[1]) &
+                    (df[lat] >= self.extent[2]) & (df[lat] <= self.extent[3])]
+        df.reset_index(drop=True, inplace=True)
+        df = df.set_index(self.index_names)
+        return df
+
+    def metric_df(self, metric):
+        """
+        Group all variables for the metric in a common data frame
+
+        Parameters
+        ---------
+        metric : str
+            The name of a metric in the file, all variables for that metric are
+            combined into one values frame.
+
+        Returns
+        -------
+        df : pd.DataFrame
+            A dataframe that contains all variables that describe the metric
+            in the column
+        """
+        for g, metric_group in {0: self.common, 2: self.double, 3: self.triple}.items():
+            if metric in metric_group.keys():
+                if g != 3:
+                    conc = [Var.values for Var in metric_group[metric]]
+                    return pd.concat(conc, axis=1)
+                else:
+                    mds_df = {}
+                    for Var in metric_group[metric]:
+                        _, _, mds_meta = Var.get_varmeta()
+                        k = (mds_meta[0], mds_meta[1]['short_name'], mds_meta[1]['short_version'])
+                        if k not in mds_df.keys():
+                            mds_df[k] = [Var.values]
+                        else:
+                            mds_df[k].append(Var.values)
+                    ret = []
+                    for k, dflist in mds_df.items():
+                        ret.append(pd.concat(dflist, axis=1))
+                    return ret
+
+    def find_group(self, src):
+        """
+        Search the element and get the variable group that it is in.
+
+        Parameters
+        ---------
+        src : str
+            Either a metric or a variable
+
+        Returns
+        -------
+        metric_group : dict
+            A collection of metrics for 2, 3 or all datasets.
+        """
+        for metric_group in [self.common, self.double, self.triple]:
+            if src in metric_group.keys():
+                return metric_group
+        for metric_group in [self.common, self.double, self.triple]:
+            for metric in metric_group.keys():
+                if src in [Var.varname for Var in metric_group[metric]]:
+                    return metric_group
+
+    def ref_meta(self) -> tuple:
+        """ Go through all variables and check if the reference dataset is the same """
+        ref_meta = None
+        for metric_group in [self.common, self.double, self.triple]:
+            for metric, vars in metric_group.items():
+                for Var in vars:
+                    if ref_meta is None:
+                        ref_meta, _, _ = Var.get_varmeta()
+                    else:
+                        new_ref_meta, _, _ = Var.get_varmeta()
+                        assert new_ref_meta == ref_meta
+        return ref_meta
+
+    def var_meta(self, varname):
+        """
+        Get the metric and metadata for a single variable.
+
+        Parameters
+        --------
+        varname : str
+            The variable that is looked up
+
+        Returns
+        -------
+        var_meta : dict
+            metric as the key and ref_meta, dss_meta and mds_meta as the
+            values.
+        """
+
+        metr_group = self.find_group(varname)
+        for metric, vars in metr_group.items():
+            for Var in vars:
+                if Var.varname == varname:
+                    return {Var.metric: Var.get_varmeta()}
+
+    def metric_meta(self, metric):
+        """
+        Get the meta values for all variables that describe the passed metric.
+
+        Parameters
+        ----------
+        metric : str
+            A metric that is in the file (e.g. n_obs, R, ...)
+
+        Returns
+        -------
+        metric_meta : dict
+            Dictionary of metadata dictionaries, with variables as the keys.
+        """
+
+        group = self.find_group(metric)
+        metvar_meta = {}
+        for Var in group[metric]:
+            metvar_meta[Var.varname] = Var.get_varmeta()
+        return metvar_meta
+
+    def parse_filename(self):
+        """
+        Parse filename and derive the validation datasets. Relies on the separator
+        between values sets in the filename from the globals.
+
+        Parameters
+        ----------
+        filename : str
+            File name (not path) to parse based on the rule from globals.
+
+        Returns
+        -------
+        ds_and_vers : dict
+            The parsed datasets and version from the file name.
+        """
+        filename = os.path.basename(self.filepath)
+        parts = filename.split(globals.ds_fn_sep)
+        fname_templ = _build_fname_templ(len(parts))
+        return parse(fname_templ, filename).named
+
+    def ls_metrics(self, as_groups=True):
+        """
+        Get a list of validation METRICS names that are in the current loaded.
+
+        Parameters
+        ----------
+        as_groups : bool, optional (default: True)
+            Return the metrics grouped by whether all datasets, two, or three
+            are considered during calculation. If this is False, then all metrics
+            are combined in a common list
+
+        Returns
+        -------
+        metrics : list or OrderedDict
+            The (grouped) metrics in the current file.
+        """
+
+        common = [m for m in self.common.keys()]
+        double = [m for m in self.double.keys()]
+        triple = [m for m in self.triple.keys()]
+
+        if as_groups:
+            return OrderedDict([('common', common), ('double', double),
+                                ('triple', triple)])
+        else:
+            return np.sort(np.array(common + double + triple))
+
+    def ls_vars(self, as_groups=True):
+        """
+        Get a list of VARIABLES (except gpi, lon, lat) of the current file.
+
+        Parameters
+        ---------
+        only_metrics_vars : bool
+            Only include variables that describe a validation metric
+        exclude_empty : bool, optional (default: True)
+            Ignore variables that are empty / all nans from reading
+
+        Returns
+        --------
+        vars : np.array
+            Alphabetically sorted variables in the file (except gpi, lon, lat),
+            optionally without the empty variables.
+        """
+        common, double, triple = None, None, None
+        for g, metric_group in zip((0,2,3), (self.common, self.double, self.triple)):
+            varnames = []
+            for metric in metric_group.keys():
+                for Var in metric_group[metric]:
+                    varnames.append(Var.varname)
+            if g == 0:
+                common = varnames
+            elif g == 2:
+                double = varnames
+            elif g == 3:
+                triple = varnames
+            else:
+                raise NotImplementedError
+
+        if as_groups:
+            return OrderedDict([('common', common), ('double', double),
+                                ('triple', triple)])
+        else:
+            return np.sort(np.array(common + double + triple))
+
+if __name__ == '__main__':
+    path = r'H:\code\qa4sm-reader\tests\test_data\tc\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-ASCAT.sm.nc'
+    # 6-ISMN.soil moisture_with_1-C3S.sm_with_2-C3S.sm_with_3-SMOS.Soil_Moisture_with_4-SMAP.soil_moisture_with_5-ASCAT.sm.nc'
+    img = QA4SMImg(path)
+    img.metric_df('snr')
