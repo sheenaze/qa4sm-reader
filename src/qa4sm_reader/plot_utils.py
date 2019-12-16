@@ -80,7 +80,7 @@ def geotraj_to_geo2d(df, var, index=globals.index_names):
 
     return zz, data_extent
 
-def get_value_range(ds, metric=None, offset_q01=0.01):
+def get_value_range(ds, metric=None, force_quantile=False, quantiles=[0.025, 0.975]):
     """
     Get the value range (v_min, v_max) from globals._metric_value_ranges
     If the range is (None, None), a symmetric range around 0 is created,
@@ -93,8 +93,12 @@ def get_value_range(ds, metric=None, offset_q01=0.01):
         Series holding the values
     metric : str , optional (default: None)
         name of the metric (e.g. 'R'). None equals to force_quantile=True.
-    offset_q01 : float
-        Percentage offset to add to the max or min if quantile is 0 or 1
+    force_quantile : bool, optional
+        always use quantile, regardless of globals.
+        The default is False.
+    quantiles : list, optional
+        quantile of data to include in the range.
+        The default is [0.025,0.975]
 
     Returns
     -------
@@ -103,33 +107,33 @@ def get_value_range(ds, metric=None, offset_q01=0.01):
     v_max : float
         upper value range of plot.
     """
-    v_min = globals._metric_value_ranges[metric][0]
-    v_max = globals._metric_value_ranges[metric][1]
+    if metric == None:
+        force_quantile = True
 
-    if isinstance(v_min, tuple) and isinstance(v_max, tuple):
-        assert v_min[0] == 'quantile' == v_max[0]
-        q_min = v_min[1]
-        q_max = v_max[1]
-        if q_min == 0.:
-            v_min = min(min(ds)) - (abs(min(min(ds))) * offset_q01)
-        else:
-            v_min, _ = get_quantiles(ds, [q_min, 1])
-        if q_max == 1.:
-            v_max = max(max(ds)) + (abs(max(max(ds))) * offset_q01)
-        else:
-            _, v_max = get_quantiles(ds, [0, q_max])
-        if (q_min + q_max) == 1.: # make sure the range is symmetric around 0
-             v_max = max(abs(v_min), abs(v_max))
-             v_min = -v_max
-    else:
-        if isinstance(v_min, tuple) and not isinstance(v_max, tuple):
-            assert v_min[0] == 'quantile'
-            q_min = v_min[1]
-            v_min, _ = get_quantiles(ds, [q_min, 1])
-        elif not isinstance(v_min, tuple) and isinstance(v_max, tuple):
-            assert v_max[0] == 'quantile'
-            q_max = v_max[1]
-            _, v_max = get_quantiles(ds, [0, q_max])
+    if not force_quantile:  # try to get range from globals
+        try:
+            v_min = globals._metric_value_ranges[metric][0]
+            v_max = globals._metric_value_ranges[metric][1]
+            if (v_min is None and v_max is None):  # get quantile range and make symmetric around 0.
+                v_min, v_max = get_quantiles(ds, quantiles)
+                v_max = max(abs(v_min), abs(v_max))  # make sure the range is symmetric around 0
+                v_min = -v_max
+            elif v_min is None:
+                v_min = get_quantiles(ds, quantiles)[0]
+            elif v_max is None:
+                v_max = get_quantiles(ds, quantiles)[1]
+            else:  # v_min and v_max are both determinded in globals
+                pass
+        except KeyError:  # metric not known, fall back to quantile
+            force_quantile = True
+            warnings.warn('The metric \'{}\' is not known. \n'.format(metric) + \
+                          'Could not get value range from globals._metric_value_ranges\n' + \
+                          'Computing quantile range \'{}\' instead.\n'.format(str(quantiles)) +
+                          'Known metrics are: \'' + \
+                          '\', \''.join([metric for metric in globals._metric_value_ranges]) + '\'')
+
+    if force_quantile:  # get quantile range
+        v_min, v_max = get_quantiles(ds, quantiles)
 
     return v_min, v_max
 

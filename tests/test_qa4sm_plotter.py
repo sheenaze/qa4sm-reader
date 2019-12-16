@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from src.qa4sm_reader.plotter import QA4SM_MetaImg_Plotter
+from src.qa4sm_reader.plotter import QA4SMPlotter
+from src.qa4sm_reader.img import QA4SMImg
 import os
 import unittest
 import tempfile
@@ -8,57 +9,65 @@ import tempfile
 class TestQA4SMMetaImgBasicPlotter(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.testfile = '3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-SMOS.Soil_Moisture.nc'
+        self.testfile = '3-GLDAS.SoilMoi0_10cm_inst_with_1-C3S.sm_with_2-SMOS.Soil_Moisture.nc'
         self.testfile_path = os.path.join(os.path.dirname(__file__), '..','tests',
-                                          'test_data', self.testfile)
-        self.img = QA4SM_MetaImg_Plotter(self.testfile_path,
-                                         extent=(132., 156., -44, -40))
-
-        self.n_ds = len(self.testfile.split('_with_'))
-
-    def test_get_dirname_type(self):
-        dirpath = tempfile.mkdtemp()
-        out_dir, out_name, out_type = self.img._get_dir_name_type(
-            'test.png', out_type='png', out_dir=dirpath)
-        assert out_dir == dirpath
-        assert out_name == 'test'
-        assert out_type == {'.png'}
-
-    def test_ds_pretty_names(self):
-        varmeta = self.img.get_var_meta(['n_obs'])
-        (ref_pretty, ref_version_pretty), (ds_pretty, ds_version_pretty) = \
-        self.img._ds_pretty_names(varmeta['n_obs'])
-        assert ref_pretty == 'ERA5-Land'
-        assert ref_version_pretty == 'v20190904'
-        assert ds_pretty == ['C3S', 'SMOS IC'] # ALL 3 datasets are in the common var
-        assert ds_version_pretty == ['v201812', 'V.105 Ascending']
-
-        varmeta = self.img.get_var_meta(['R_between_3-ERA5_LAND_and_1-C3S'])
-        (ref_pretty, ref_version_pretty), (ds_pretty, ds_version_pretty) = \
-        self.img._ds_pretty_names(varmeta['R_between_3-ERA5_LAND_and_1-C3S'])
-        assert ref_pretty == 'ERA5-Land'
-        assert ref_version_pretty == 'v20190904'
-        assert ds_pretty == ['C3S'] # Only the ref and one sat values
-        assert ds_version_pretty == ['v201812']
-
-    def test_boxplot(self):
-        metrics = self.img.metrics_in_file(False)
-        for metric in metrics:
-            #dirpath = tempfile.mkdtemp()
-            dirpath = r'C:\Temp\qa4smreader_plots\test\boxes'
-            self.img.boxplot_basic(metric, out_dir=dirpath, out_name=None, out_type='png')
-            self.img.boxplot_basic(metric, out_dir=dirpath, out_name=None, out_type='svg')
+                                          'test_data', 'tc', self.testfile)
+        self.plotdir = tempfile.mkdtemp()
+        self.img = QA4SMImg(self.testfile_path)
+        self.plotter = QA4SMPlotter(self.img, self.plotdir)
 
     def test_mapplot(self):
-        vars = self.img.vars_in_file(True)
-        for var in vars:
-            #dirpath = tempfile.mkdtemp()
-            dirpath = r'C:\Temp\qa4smreader_plots\test\maps'
-            self.img.mapplot(var, out_dir=dirpath, out_name=None, out_type='png')
-            self.img.mapplot(var, out_dir=dirpath, out_name=None, out_type='svg')
+        n_obs_files = self.plotter.mapplot('n_obs', out_type='png') # should be 1
+        assert len(list(n_obs_files)) == 1
+        assert len(os.listdir(self.plotdir)) == 1
+
+        r_files = self.plotter.mapplot('R', out_type='svg') # should be 2
+        assert len(os.listdir(self.plotdir)) == 1 + 2
+        assert len(list(r_files)) == 2
+
+        bias_files = self.plotter.mapplot('BIAS', out_type='png') # should be 2
+        assert len(os.listdir(self.plotdir)) == 1 + 2 + 2
+        assert len(list(bias_files)) == 2
+
+
+        snr_files = self.plotter.mapplot('snr', out_type='png') # should be 2
+        assert len(os.listdir(self.plotdir)) == 1 + 2 + 2 +2
+        assert len(list(snr_files)) == 2
+
+        err_files = self.plotter.mapplot('err_std', out_type='svg') # should be 2
+        assert len(os.listdir(self.plotdir)) == 1 + 2 + 2 +2 +2
+        assert len(list(err_files)) == 2
+
+        os.rmdir(self.plotdir)
+
+    def test_boxplot(self):
+        n_obs_files = self.plotter.boxplot_basic('n_obs', out_type='png') # should be 1
+        assert len(list(n_obs_files)) == 1
+        assert len(os.listdir(self.plotdir)) == 1
+
+        r_files = self.plotter.boxplot_basic('R', out_type='svg') # should be 1
+        assert len(os.listdir(self.plotdir)) == 1 + 1
+        assert len(list(r_files)) == 1
+
+        bias_files = self.plotter.boxplot_basic('BIAS', out_type='png') # should be 1
+        assert len(os.listdir(self.plotdir)) == 1 + 1 + 1
+        assert len(list(bias_files)) == 1
+
+        snr_files = self.plotter.boxplot_tc('snr', out_type='png') # should be 1
+        assert len(os.listdir(self.plotdir)) == 1 + 1 + 1 + 2
+        assert len(list(snr_files)) == 2
+
+        err_files = self.plotter.boxplot_tc('err_std', out_type='svg') # should be 1
+        assert len(os.listdir(self.plotdir)) == 1 + 1 + 1 + 2 + 2
+        assert len(list(err_files)) == 2
+
+        os.rmdir(self.plotdir)
+
+
+
 
 if __name__ == '__main__':
     suite = unittest.TestSuite()
-    suite.addTest(TestQA4SMMetaImgBasicPlotter("test_boxplot"))
+    suite.addTest(TestQA4SMMetaImgBasicPlotter("test_mapplot"))
     runner = unittest.TextTestRunner()
     runner.run(suite)

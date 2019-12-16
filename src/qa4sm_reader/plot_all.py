@@ -57,6 +57,8 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png',
 
 
 if __name__ == '__main__':
-    afile = r"H:\code\qa4sm-reader\tests\test_data\old\3-GLDAS.SoilMoi0_10cm_inst_with_1-C3S.sm_with_2-ESA_CCI_SM_combined.sm.nc"
+    afile = r"H:\code\qa4sm-reader\tests\test_data\tc\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-ASCAT.sm.nc"
     out_dir = r"C:\Temp\qa4smreader_plots\new"
-    fnb, fnm = plot_all(afile, out_dir=out_dir, out_type='png')
+    fnb, fnm = plot_all(afile, out_dir=out_dir, out_type='svg')
+    print(fnb)
+    print(fnm)

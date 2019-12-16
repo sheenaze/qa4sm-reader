@@ -109,18 +109,18 @@ _metric_value_ranges = {  # from /qa4sm/validator/validation/graphics.py
     'p_R': [0, 1],  # probability that observed corellation is statistical fluctuation
     'rho': [-1, 1],
     'p_rho': [0, 1],
-    'RMSD': [0, ('quantile', 0.975)],
-    'BIAS': [('quantile', 0.025), ('quantile', 0.975)],
-    'n_obs': [0, ('quantile', 1.)],
-    'urmsd': [0, ('quantile', 0.975)],
-    'RSS': [0, ('quantile', 0.975)],
-    'mse': [0, ('quantile', 0.975)],  # mse only positive (https://en.wikipedia.org/wiki/Mean_squared_error)
-    'mse_corr': [0, ('quantile', 0.975)],  # mse_corr only positive
-    'mse_bias': [0, ('quantile', 0.975)],  # mse_bias only positive
-    'mse_var': [0, ('quantile', 0.975)],  # mse_var only positive
-    'snr': [('quantile', 0.025), ('quantile', 0.975)],  # mse_var only positive
-    'err_std': [('quantile', 0.025), ('quantile', 0.975)],  # mse_var only positive
-    'beta': [('quantile', 0.025), ('quantile', 0.975)],  # mse_var only positive
+    'RMSD': [0, None],
+    'BIAS': [None, None],
+    'n_obs': [0, None],
+    'urmsd': [0, None],
+    'RSS': [0, None],
+    'mse': [0, None],  # mse only positive (https://en.wikipedia.org/wiki/Mean_squared_error)
+    'mse_corr': [0, None],  # mse_corr only positive
+    'mse_bias': [0, None],  # mse_bias only positive
+    'mse_var': [0, None],  # mse_var only positive
+    'snr': [None,None],  # mse_var only positive
+    'err_std': [None,None],  # mse_var only positive
+    'beta': [None,None],  # mse_var only positive
 }
 
 # check if every metric has a colormap

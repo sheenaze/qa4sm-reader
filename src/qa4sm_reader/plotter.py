@@ -489,7 +489,7 @@ class QA4SMPlotter(object):
                 fname = os.path.join(out_dir, out_name+ending)
                 plt.savefig(fname, dpi='figure', bbox_inches='tight')
                 fnames.append(fname)
-            plt.close()
+            plt.close('all')
             return fnames
 
     def mapplot_var(self, varname, out_name=None, out_type=None,
@@ -574,7 +574,7 @@ class QA4SMPlotter(object):
                 fname = os.path.join(out_dir, out_name+ending)
                 plt.savefig(fname, dpi='figure', bbox_inches='tight')
                 fnames.append(fname)
-            plt.close()
+            plt.close('all')
             return fnames
 
     def mapplot(self, metric, out_type=None, **plot_kwargs):
@@ -606,7 +606,8 @@ class QA4SMPlotter(object):
 
 
 if __name__ == '__main__':
-    path = r'H:\code\qa4sm-reader\tests\test_data\tc\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-ASCAT.sm.nc'
+
+    path = r"H:\code\qa4sm-reader\tests\test_data\tc\5-ERA5.swvl1_with_1-C3S.sm_with_2-SMOS.Soil_Moisture_with_3-SMAP.soil_moisture_with_4-ASCAT.sm.nc"
     out_dir = r'C:\Temp\qa4smreader_plots\new'
     img = QA4SMImg(path)
     harry = QA4SMPlotter(img, out_dir=out_dir)
