@@ -53,7 +53,7 @@ MANIFEST
 # spyder project files
 .spyproject/
 
-# test values, test results
+# test data, test results
 # tests/test_data
 tests/test_data/old
 tests/test_results
