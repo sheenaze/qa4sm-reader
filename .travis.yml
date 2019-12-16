@@ -23,7 +23,7 @@ install:
 
   - conda create -n qa4smreader python=${TRAVIS_PYTHON_VERSION}
 
-  - conda env update -f environment.yml -n qa4smreader;
+  - conda env update -f environment.yml -n qa4smreader
 
   - source activate qa4smreader
   - python setup.py install
