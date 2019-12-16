@@ -17,7 +17,7 @@ matrix:
 install:
   # You may want to periodically update this, although the conda update
   # conda line below will keep everything up-to-date.  We do this
-  # conditionally because it saves us some downloading if the __version is
+  # conditionally because it saves us some downloading if the version is
   # the same.
   - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - pinned_yml=environment_pinned_py3.yml;
