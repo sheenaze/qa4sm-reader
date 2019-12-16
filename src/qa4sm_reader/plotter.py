@@ -560,7 +560,21 @@ class QA4SMPlotter(object):
             make_watermark(fig, globals.watermark_pos, for_map=True)
         # === save ===
         if not out_name:
-            out_name = 'overview_{}'.format(varname)
+            ref_num = var_meta[metric][0][0]
+            if metric in globals.metric_groups[0]:
+                out_name = 'overview_{}'.format(varname)
+            elif metric in globals.metric_groups[2]:
+                ds_meta = var_meta[metric][1][0]
+                out_name = 'overview_{}-{}_and_{}-{}_{}'.format(
+                    ref_num, ref_short, ds_meta[0], ds_meta[1]['short_name'], metric)
+            else:
+                ds_meta = var_meta[metric][1][0]
+                ds2_meta = var_meta[metric][1][1]
+                met_meta = var_meta[metric][2]
+                out_name = 'overview_{}-{}_and_{}-{}_and_{}-{}_{}_for_{}-{}'.format(
+                    ref_num, ref_short, ds_meta[0], ds_meta[1]['short_name'], ds2_meta[0],
+                    ds2_meta[1]['short_name'], metric, met_meta[0], met_meta[1]['short_name'])
+
 
         if self.out_dir is None:
             return fig, ax
@@ -600,6 +614,7 @@ class QA4SMPlotter(object):
         fnames = []
         for varname in varnames:
             fns = self.mapplot_var(varname, out_name=None, out_type=out_type, **plot_kwargs)
+            plt.close('all')
             for fn in fns: fnames.append(fn)
         return fnames
 
@@ -611,8 +626,8 @@ if __name__ == '__main__':
     out_dir = r'C:\Temp\qa4smreader_plots\new'
     img = QA4SMImg(path)
     harry = QA4SMPlotter(img, out_dir=out_dir)
-    harry.boxplot_tc('snr')
     harry.mapplot('snr')
+    harry.boxplot_tc('snr')
 
     harry.mapplot('R')
     harry.mapplot('RMSD')

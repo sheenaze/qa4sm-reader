@@ -3,6 +3,7 @@ import os
 from qa4sm_reader.plotter import QA4SMPlotter
 from qa4sm_reader.img import QA4SMImg
 from qa4sm_reader import globals
+import matplotlib.pyplot as plt
 
 def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png',
              boxplot_kwargs=dict(), mapplot_kwargs=dict()):
@@ -49,15 +50,25 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png',
             fns_box = plotter.boxplot_tc(metric, out_type=out_type,
                                          **boxplot_kwargs)
         fns_maps = plotter.mapplot(metric, out_type=out_type, **mapplot_kwargs)
-
+        plt.close('all')
         for fn in fns_box: fnames_boxes.append(fn)
         for fn in fns_maps: fnames_maps.append(fn)
 
     return fnames_boxes, fnames_maps
 
 if __name__ == '__main__':
+    from zipfile import ZipFile, ZIP_DEFLATED
+    from os import path
     afile = r"H:\code\qa4sm-reader\tests\test_data\tc\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-ASCAT.sm.nc"
     out_dir = r"C:\Temp\qa4smreader_plots\new"
-    fnb, fnm = plot_all(afile, out_dir)
-    print(fnb)
-    print(fnm)
+    fnb, fnm = plot_all(afile, out_dir=out_dir, out_type='png')
+    fnb_svg, fnm_svg = plot_all(afile, out_dir=out_dir, out_type='svg')
+
+    with ZipFile(os.path.join(out_dir, 'myzip.zip'), 'w', ZIP_DEFLATED) as myzip:
+        for pngfile in fnb + fnm:
+            arcname = path.basename(pngfile)
+            myzip.write(pngfile, arcname=arcname)
+        for svgfile in fnb_svg + fnm_svg:
+            arcname = path.basename(svgfile)
+            myzip.write(svgfile, arcname=arcname)
+            os.remove(svgfile)
