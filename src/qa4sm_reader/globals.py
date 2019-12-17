@@ -20,7 +20,7 @@ naturalearth_resolution = '110m'  # One of '10m', '50m' and '110m'. Finer resolu
 crs = ccrs.PlateCarree()  # projection. Must be a class from cartopy.crs. Note, that plotting labels does not work for most projections.
 markersize = 4  # diameter of Marker in points.
 map_pad = 0.15  # padding relative to map height.
-grid_intervals = [0.25, 0.5, 1, 2, 5, 10, 30]  # grid spacing in degree to choose from (plotter will try to make 5 gridlines in the smaller dimension)
+grid_intervals = [2, 5, 10, 30]  # grid spacing in degree to choose from (plotter will try to make 5 gridlines in the smaller dimension)
 max_title_len = 8 * map_figsize[0]  # maximum length of plot title in chars. if longer, it will be broken in multiple lines.
 
 # === boxplot_basic defaults ===

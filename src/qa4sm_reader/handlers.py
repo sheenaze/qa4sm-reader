@@ -316,8 +316,10 @@ if __name__ == '__main__':
 
     import xarray as xr
     ds = xr.load_dataset(r"H:\code\qa4sm-reader\tests\test_data\basic\4-ERA5.swvl1_with_1-C3S.sm_with_2-ASCAT.sm_with_3-SMOS.Soil_Moisture.nc")
+    print('setup')
     var1 = QA4SMMetricVariable('n_obs', ds.attrs)
     var2 = QA4SMMetricVariable('RMSD_between_4-ERA5_and_1-C3S', ds.attrs)
+    print('varmeta')
     var1.get_varmeta()
     var2.get_varmeta()
 

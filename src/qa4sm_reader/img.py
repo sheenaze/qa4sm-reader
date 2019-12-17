@@ -48,6 +48,7 @@ class QA4SMImg(object):
 
     def _load_metrics_from_file(self, metrics:list=None) -> (dict, dict, dict):
         """ Load and group all metrics from file """
+        self.df = self._ds2df(None)
 
         common, double, triple = dict(), dict(), dict()
         if metrics is None:
@@ -71,8 +72,9 @@ class QA4SMImg(object):
         all_vars = np.sort(np.array(list(self.ds.variables.keys())))
         metr_vars = []
         for var in all_vars:
-            Var = self._load_var(var)
+            Var = self._load_var(var, empty=True)
             if Var is not None and (Var.metric == metric):
+                Var.values = self.df[[var]].dropna()
                 if self.ignore_empty:
                     if not Var.isempty():
                         metr_vars.append(Var)
@@ -81,24 +83,30 @@ class QA4SMImg(object):
 
         return np.array(metr_vars)
 
-    def _load_var(self, varname:str) -> (QA4SMMetricVariable or None):
+    def _load_var(self, varname:str, empty=False) -> (QA4SMMetricVariable or None):
         """ Create a common variable and fill it with values """
+        if empty:
+            values = None
+        else:
+            values = self.df[[varname]]
         try:
-            vardata = self._ds2df([varname])
-            Var = QA4SMMetricVariable(varname, self.ds.attrs, values=vardata)
+            Var = QA4SMMetricVariable(varname, self.ds.attrs, values=values)
             return Var
         except IOError:
             return None
 
-    def _ds2df(self, varnames:list) -> pd.DataFrame:
+    def _ds2df(self, varnames:list=None) -> pd.DataFrame:
         """ Cut a variable to extent and return it as a values frame """
         try:
-            df = self.ds[self.index_names + varnames].to_dataframe()
+            if varnames is None:
+                df = self.ds.to_dataframe()
+            else:
+                df = self.ds[self.index_names + varnames].to_dataframe()
+                df.dropna(axis='index', subset=varnames, inplace=True)
         except KeyError as e:
             raise Exception(
                 'The given variable ' + ', '.join(varnames) +
                 ' do not match the names in the input values.' + str(e))
-        df.dropna(axis='index', subset=varnames, inplace=True)
         if self.extent:  # === geographical subset ===
             lat, lon = globals.index_names
             df = df[(df[lon] >= self.extent[0]) & (df[lon] <= self.extent[1]) &
@@ -306,7 +314,8 @@ class QA4SMImg(object):
             return np.sort(np.array(common + double + triple))
 
 if __name__ == '__main__':
+    afile = r"H:\code\qa4sm-reader\tests\test_data\basic\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-SMOS.Soil_Moisture.nc"
     path = r'H:\code\qa4sm-reader\tests\test_data\tc\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-ASCAT.sm.nc'
     # 6-ISMN.soil moisture_with_1-C3S.sm_with_2-C3S.sm_with_3-SMOS.Soil_Moisture_with_4-SMAP.soil_moisture_with_5-ASCAT.sm.nc'
-    img = QA4SMImg(path)
+    img = QA4SMImg(afile)
     img.metric_df('snr')
