@@ -208,7 +208,7 @@ def get_plot_extent(df, grid=False):
         extent[3] = 90
     return extent
 
-def init_plot(figsize, dpi, add_cbar, projection):
+def init_plot(figsize, dpi, add_cbar=None, projection=None):
     if not projection:
         projection=globals.crs
     fig = plt.figure(figsize=figsize, dpi=dpi)
@@ -256,31 +256,38 @@ def style_map(ax, plot_extent, add_grid=True, map_resolution=globals.naturaleart
     if add_grid:
         # add gridlines. Bcs a bug in cartopy, draw girdlines first and then grid labels.
         # https://github.com/SciTools/cartopy/issues/1342
-        grid_interval = max((plot_extent[1] - plot_extent[0]),
-                            (plot_extent[3] - plot_extent[2])) / 5  # create apprx. 5 gridlines in the bigger dimension
-        grid_interval = min(globals.grid_intervals, key=lambda x: abs(
-            x - grid_interval))  # select the grid spacing from the list which fits best
-        gl = ax.gridlines(crs=globals.data_crs, draw_labels=False,
-                          linewidth=0.5, color='grey', linestyle='--',
-                          zorder=3)  # draw only gridlines.
-        xticks = np.arange(-180, 180.001, grid_interval)
-        yticks = np.arange(-90, 90.001, grid_interval)
-        gl.xlocator = mticker.FixedLocator(xticks)
-        gl.ylocator = mticker.FixedLocator(yticks)
-        try:  # drawing labels fails for most projections
-            gltext = ax.gridlines(crs=globals.data_crs, draw_labels=True,
-                                  linewidth=0.5, color='grey', alpha=0., linestyle='--',
-                                  zorder=4)  # draw only grid labels.
-            xticks = xticks[(xticks >= plot_extent[0]) & (xticks <= plot_extent[1])]
-            yticks = yticks[(yticks >= plot_extent[2]) & (yticks <= plot_extent[3])]
-            gltext.xformatter = LONGITUDE_FORMATTER
-            gltext.yformatter = LATITUDE_FORMATTER
-            gltext.xlabels_top = False
-            gltext.ylabels_left = False
-            gltext.xlocator = mticker.FixedLocator(xticks)
-            gltext.ylocator = mticker.FixedLocator(yticks)
-        except RuntimeError as e:
-            print("No tick labels plotted.\n" + str(e))
+        try:
+            grid_interval = max((plot_extent[1] - plot_extent[0]),
+                                (plot_extent[3] - plot_extent[2])) / 5  # create apprx. 5 gridlines in the bigger dimension
+            if grid_interval <= min(globals.grid_intervals):
+                raise RuntimeError
+            grid_interval = min(globals.grid_intervals, key=lambda x: abs(
+                x - grid_interval))  # select the grid spacing from the list which fits best
+            gl = ax.gridlines(crs=globals.data_crs, draw_labels=False,
+                              linewidth=0.5, color='grey', linestyle='--',
+                              zorder=3)  # draw only gridlines.
+            # todo this can slow the plotting down!!
+            xticks = np.arange(-180, 180.001, grid_interval)
+            yticks = np.arange(-90, 90.001, grid_interval)
+            gl.xlocator = mticker.FixedLocator(xticks)
+            gl.ylocator = mticker.FixedLocator(yticks)
+        except RuntimeError:
+            pass
+        else:
+            try:  # drawing labels fails for most projections
+                gltext = ax.gridlines(crs=globals.data_crs, draw_labels=True,
+                                      linewidth=0.5, color='grey', alpha=0., linestyle='-',
+                                      zorder=4)  # draw only grid labels.
+                xticks = xticks[(xticks >= plot_extent[0]) & (xticks <= plot_extent[1])]
+                yticks = yticks[(yticks >= plot_extent[2]) & (yticks <= plot_extent[3])]
+                gltext.xformatter = LONGITUDE_FORMATTER
+                gltext.yformatter = LATITUDE_FORMATTER
+                gltext.xlabels_top = False
+                gltext.ylabels_left = False
+                gltext.xlocator = mticker.FixedLocator(xticks)
+                gltext.ylocator = mticker.FixedLocator(yticks)
+            except RuntimeError as e:
+                print("No tick labels plotted.\n" + str(e))
     if add_topo:
         ax.stock_img()
     if add_coastline:
@@ -301,7 +308,7 @@ def style_map(ax, plot_extent, add_grid=True, map_resolution=globals.naturaleart
     if add_us_states:
         ax.add_feature(cfeature.STATES, linewidth=0.1, zorder=3)
 
-
+    return ax
 def make_watermark(fig, placement=globals.watermark_pos, for_map=False, offset=0.02):
     """
     Adds a watermark to fig and adjusts the current axis to make sure there
