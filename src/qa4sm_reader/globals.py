@@ -109,6 +109,8 @@ _metric_value_ranges = {  # from /qa4sm/validator/validation/graphics.py
     'p_R': [0, 1],  # probability that observed corellation is statistical fluctuation
     'rho': [-1, 1],
     'p_rho': [0, 1],
+    'tau' : [-1, 1],
+    'p_tau': [0, 1],
     'RMSD': [0, None],
     'BIAS': [None, None],
     'n_obs': [0, None],

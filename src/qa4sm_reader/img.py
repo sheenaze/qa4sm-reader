@@ -42,7 +42,7 @@ class QA4SMImg(object):
         self.index_names = index_names
 
         self.ignore_empty = ignore_empty
-        self.ds = xr.load_dataset(self.filepath)
+        self.ds = xr.open_dataset(self.filepath)
 
         self.common, self.double, self.triple = self._load_metrics_from_file(metrics)
 
@@ -95,6 +95,7 @@ class QA4SMImg(object):
         except IOError:
             return None
 
+
     def _ds2df(self, varnames:list=None) -> pd.DataFrame:
         """ Cut a variable to extent and return it as a values frame """
         try:
@@ -107,12 +108,20 @@ class QA4SMImg(object):
             raise Exception(
                 'The given variable ' + ', '.join(varnames) +
                 ' do not match the names in the input values.' + str(e))
+
+        if isinstance(df.index, pd.MultiIndex):
+            lat, lon = globals.index_names
+            df[lat] = df.index.get_level_values(lat)
+            df[lon] = df.index.get_level_values(lon)
+
         if self.extent:  # === geographical subset ===
             lat, lon = globals.index_names
             df = df[(df[lon] >= self.extent[0]) & (df[lon] <= self.extent[1]) &
                     (df[lat] >= self.extent[2]) & (df[lat] <= self.extent[3])]
+
         df.reset_index(drop=True, inplace=True)
         df = df.set_index(self.index_names)
+
         return df
 
     def metric_df(self, metric):
