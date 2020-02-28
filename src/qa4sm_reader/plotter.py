@@ -374,7 +374,7 @@ class QA4SMPlotter(object):
             fig, ax = boxplot(df=df, label=label, figsize=figsize, dpi=globals.dpi)
 
             # === set limits ===
-            ax.set_ylim(get_value_range(df, metric))
+            ##ax.set_ylim(get_value_range(df, metric))
 
             # === add title ===
             ax.set_title(title, pad=globals.title_pad)
@@ -467,7 +467,7 @@ class QA4SMPlotter(object):
         fig, ax = boxplot(df=df, label=label, figsize=figsize, dpi=globals.dpi)
 
         # === set limits ===
-        ax.set_ylim(get_value_range(df, metric))
+        #ax.set_ylim(get_value_range(df, metric))
 
         # === add title ===
         ax.set_title(title, pad=globals.title_pad)

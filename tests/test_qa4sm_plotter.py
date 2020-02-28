@@ -14,7 +14,7 @@ class TestQA4SMMetaImgISMNPlotter(unittest.TestCase):
         self.testfile = '2-ISMN.soil moisture_with_1-C3S.sm.nc'
         self.testfile_path = os.path.join(os.path.dirname(__file__), '..','tests',
                                           'test_data', 'basic', self.testfile)
-        self.plotdir =tempfile.mkdtemp()#
+        self.plotdir = tempfile.mkdtemp()
         self.img = QA4SMImg(self.testfile_path)
         self.plotter = QA4SMPlotter(self.img, self.plotdir)
 
@@ -56,7 +56,7 @@ class TestQA4SMMetaImgBasicPlotter(unittest.TestCase):
         self.testfile = '3-GLDAS.SoilMoi0_10cm_inst_with_1-C3S.sm_with_2-SMOS.Soil_Moisture.nc'
         self.testfile_path = os.path.join(os.path.dirname(__file__), '..','tests',
                                           'test_data', 'tc', self.testfile)
-        self.plotdir =tempfile.mkdtemp()# r"C:\Temp\qa4smreader_plots\new" #
+        self.plotdir = tempfile.mkdtemp()
         self.img = QA4SMImg(self.testfile_path)
         self.plotter = QA4SMPlotter(self.img, self.plotdir)
 
@@ -112,7 +112,13 @@ class TestQA4SMMetaImgBasicPlotter(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestSuite()
-    suite.addTest(TestQA4SMMetaImgISMNPlotter("test_mapplot"))
-    runner = unittest.TextTestRunner()
-    runner.run(suite)
+    pass
+    # suite = unittest.TestSuite()
+    # suite.addTest(TestQA4SMMetaImgISMNPlotter("test_boxplot"))
+    # runner = unittest.TextTestRunner()
+    # runner.run(suite)
+    #
+    # suite = unittest.TestSuite()
+    # suite.addTest(TestQA4SMMetaImgBasicPlotter("test_boxplot"))
+    # runner = unittest.TextTestRunner()
+    # runner.run(suite)
