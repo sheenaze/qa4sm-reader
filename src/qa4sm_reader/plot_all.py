@@ -57,7 +57,5 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png',
     return fnames_boxes, fnames_maps
 
 if __name__ == '__main__':
-    from os import path
-    afile = r"U:\CCI_v047_VALIDATION\ISMN0_5_CCI47_PASSIVE_absolute\netcdf\ismn_val_1979-01-01_TO_2019-12-31.nc"
-    out_dir = r"U:\CCI_v047_VALIDATION\ISMN0_5_CCI47_PASSIVE_absolute"
-    fnb, fnm = plot_all(afile, out_dir=out_dir, out_type='png')
+    thefile = "/home/wolfgang/data-read/qa4sm-data/2-ERA5_LAND.swvl1_with_1-ESA_CCI_SM_combined.sm.nc"
+    plot_all(thefile, out_dir=os.path.join(os.path.dirname(thefile), 'out'))

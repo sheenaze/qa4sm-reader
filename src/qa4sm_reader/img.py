@@ -100,6 +100,8 @@ class QA4SMImg(object):
         """ Cut a variable to extent and return it as a values frame """
         try:
             if varnames is None:
+                if len(self.ds[globals.time_name]) == 0:
+                    self.ds = self.ds.drop_vars('time')
                 df = self.ds.to_dataframe()
             else:
                 df = self.ds[self.index_names + varnames].to_dataframe()

@@ -332,14 +332,14 @@ def make_watermark(fig, placement=globals.watermark_pos, for_map=False, offset=0
     height = fig.get_size_inches()[1]
     offset = offset + (((fontsize + pad) / globals.matplotlib_ppi) / height) * 2.2
     if placement == 'top':
-        plt.annotate(s=globals.watermark, xy=[0.5, 1], xytext=[-pad, -pad],
+        plt.annotate(text=globals.watermark, xy=[0.5, 1], xytext=[-pad, -pad],
                      fontsize=fontsize, color='grey',
                      horizontalalignment='center', verticalalignment='top',
                      xycoords='figure fraction', textcoords='offset points')
         top = fig.subplotpars.top
         fig.subplots_adjust(top=top - offset)
     elif placement == 'bottom':
-        plt.annotate(s=globals.watermark, xy=[0.5, 0], xytext=[pad, pad],
+        plt.annotate(text=globals.watermark, xy=[0.5, 0], xytext=[pad, pad],
                      fontsize=fontsize, color='grey',
                      horizontalalignment='center', verticalalignment='bottom',
                      xycoords='figure fraction', textcoords='offset points')
