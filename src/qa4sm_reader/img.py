@@ -329,7 +329,3 @@ class QA4SMImg(object):
         else:
             return np.sort(np.array(common + double + triple))
 
-if __name__ == '__main__':
-    afile = r"D:\data-write\CCI_Prod_Validation\TEST\with_ISMN\v52_COMB_vs_ACT_vs_PASS\v1\netcdf\ismn_val_2001-01-01_TO_2019-12-31_in_0_TO_0.1.nc"
-    img = QA4SMImg(afile)
-    img.metric_df('snr')

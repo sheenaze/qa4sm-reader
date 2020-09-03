@@ -626,19 +626,3 @@ class QA4SMPlotter(object):
             plt.close('all')
             for fn in fns: fnames.append(fn)
         return fnames
-
-
-
-if __name__ == '__main__':
-
-    path = r"H:\code\qa4sm-reader\tests\test_data\tc\5-ERA5.swvl1_with_1-C3S.sm_with_2-SMOS.Soil_Moisture_with_3-SMAP.soil_moisture_with_4-ASCAT.sm.nc"
-    out_dir = r'C:\Temp\qa4smreader_plots\new'
-    img = QA4SMImg(path)
-    harry = QA4SMPlotter(img, out_dir=out_dir)
-    harry.mapplot('snr')
-    harry.boxplot_tc('snr')
-
-    harry.mapplot('R')
-    harry.mapplot('RMSD')
-    harry.mapplot('rho')
-    harry.mapplot('BIAS')

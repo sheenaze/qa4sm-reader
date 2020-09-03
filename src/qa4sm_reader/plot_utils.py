@@ -348,5 +348,3 @@ def make_watermark(fig, placement=globals.watermark_pos, for_map=False, offset=0
             fig.subplots_adjust(bottom=bottom + offset)  # defaults to rc when none!
     else:
         raise NotImplementedError
-
-
