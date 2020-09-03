@@ -100,8 +100,9 @@ class QA4SMImg(object):
         """ Cut a variable to extent and return it as a values frame """
         try:
             if varnames is None:
-                if len(self.ds[globals.time_name]) == 0:
-                    self.ds = self.ds.drop_vars('time')
+                if globals.time_name in list(self.ds.variables.keys()):
+                    if len(self.ds[globals.time_name]) == 0:
+                        self.ds = self.ds.drop('time')
                 df = self.ds.to_dataframe()
             else:
                 df = self.ds[self.index_names + varnames].to_dataframe()
@@ -158,7 +159,11 @@ class QA4SMImg(object):
                             mds_df[k].append(Var.values)
                     ret = []
                     for k, dflist in mds_df.items():
-                        ret.append(pd.concat(dflist, axis=1))
+                        try:
+                            r = pd.concat(dflist, sort=True, axis=1)
+                        except ValueError:
+                            r = pd.concat(dflist, sort=True, axis=0)
+                        ret.append(r)
                     return ret
 
     def find_group(self, src):
@@ -325,8 +330,6 @@ class QA4SMImg(object):
             return np.sort(np.array(common + double + triple))
 
 if __name__ == '__main__':
-    afile = r"H:\code\qa4sm-reader\tests\test_data\basic\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-SMOS.Soil_Moisture.nc"
-    path = r'H:\code\qa4sm-reader\tests\test_data\tc\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-ASCAT.sm.nc'
-    # 6-ISMN.soil moisture_with_1-C3S.sm_with_2-C3S.sm_with_3-SMOS.Soil_Moisture_with_4-SMAP.soil_moisture_with_5-ASCAT.sm.nc'
+    afile = r"D:\data-write\CCI_Prod_Validation\TEST\with_ISMN\v52_COMB_vs_ACT_vs_PASS\v1\netcdf\ismn_val_2001-01-01_TO_2019-12-31_in_0_TO_0.1.nc"
     img = QA4SMImg(afile)
     img.metric_df('snr')

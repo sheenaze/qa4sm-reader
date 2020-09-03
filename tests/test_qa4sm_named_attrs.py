@@ -8,12 +8,12 @@ class TestQA4SMNamedAttributes(unittest.TestCase):
 
     def setUp(self) -> None:
         attrs = test_attributes()
-        self.ismn = QA4SMNamedAttributes(id=6, short_name='ISMN', global_attrs=attrs)
-        self.c3s17 = QA4SMNamedAttributes(id=1, short_name='C3S', global_attrs=attrs)
-        self.c3s18 = QA4SMNamedAttributes(id=2, short_name='C3S', global_attrs=attrs)
-        self.smos = QA4SMNamedAttributes(id=3, short_name='SMOS', global_attrs=attrs)
-        self.smap = QA4SMNamedAttributes(id=4, short_name='SMAP', global_attrs=attrs)
-        self.ascat = QA4SMNamedAttributes(id=5, short_name='ASCAT', global_attrs=attrs)
+        self.ismn = QA4SMNamedAttributes(id=6, short_name='ISMN', global_attrs=attrs, offset_id_dc=-1)
+        self.c3s17 = QA4SMNamedAttributes(id=1, short_name='C3S', global_attrs=attrs, offset_id_dc=-1)
+        self.c3s18 = QA4SMNamedAttributes(id=2, short_name='C3S', global_attrs=attrs, offset_id_dc=-1)
+        self.smos = QA4SMNamedAttributes(id=3, short_name='SMOS', global_attrs=attrs, offset_id_dc=-1)
+        self.smap = QA4SMNamedAttributes(id=4, short_name='SMAP', global_attrs=attrs, offset_id_dc=-1)
+        self.ascat = QA4SMNamedAttributes(id=5, short_name='ASCAT', global_attrs=attrs, offset_id_dc=-1)
 
     def test_eq(self):
         assert self.ismn != self.ascat
