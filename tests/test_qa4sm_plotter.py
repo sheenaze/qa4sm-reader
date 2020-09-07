@@ -11,7 +11,7 @@ import shutil
 class TestQA4SMMetaImgISMNPlotter(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.testfile = '2-ISMN.soil moisture_with_1-C3S.sm.nc'
+        self.testfile = '0-ISMN.soil moisture_with_1-C3S.sm.nc'
         self.testfile_path = os.path.join(os.path.dirname(__file__), '..','tests',
                                           'test_data', 'basic', self.testfile)
         self.plotdir = tempfile.mkdtemp()

@@ -309,6 +309,7 @@ def style_map(ax, plot_extent, add_grid=True, map_resolution=globals.naturaleart
         ax.add_feature(cfeature.STATES, linewidth=0.1, zorder=3)
 
     return ax
+
 def make_watermark(fig, placement=globals.watermark_pos, for_map=False, offset=0.02):
     """
     Adds a watermark to fig and adjusts the current axis to make sure there

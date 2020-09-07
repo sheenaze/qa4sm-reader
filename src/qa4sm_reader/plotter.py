@@ -244,12 +244,12 @@ class QA4SMPlotter(object):
 
         return '\n'.join(met_str)
 
-    def _box_caption(self, dss_meta, ignore_ds_idx=None, caption_header=None) -> str:
+    def _box_caption(self, dss_meta, ignore_ds_idx:list=None, caption_header=None) -> str:
         """ Create the dataset part of the box caption """
 
         ds_parts = []
         for i, ds_meta in dss_meta: # [(1, {meta})]
-            if (ignore_ds_idx is not None) and (i == ignore_ds_idx):
+            if (ignore_ds_idx is not None) and (i in ignore_ds_idx):
                 continue
             ds_parts.append('{0}\n({1})'.format(ds_meta['pretty_name'],
                                                 ds_meta['pretty_version']))
@@ -354,8 +354,9 @@ class QA4SMPlotter(object):
                 assert mds_meta == MDS_META
                 assert ref_meta == REF_META
 
-                box_cap_ds = self._box_caption(dss_meta, ignore_ds_idx=mds_meta[0],
-                                               caption_header='$3^{rd}$ Dataset:')
+                box_cap_ds = self._box_caption(
+                    dss_meta, ignore_ds_idx=[mds_meta[0], ref_meta[0]],
+                    caption_header='Other Data:')
 
                 if add_stats:
                     box_stats = self._box_stats(df[tcvar])
@@ -389,7 +390,7 @@ class QA4SMPlotter(object):
 
             # === add watermark ===
             if globals.watermark_pos not in [None, False]:
-                make_watermark(fig, globals.watermark_pos, offset=0.05)
+                make_watermark(fig, globals.watermark_pos, offset=0.1)
 
             # === save ===
             out_name = 'boxplot_{}_{}-{}'.format(metric, MDS_META[0], MDS_META[1]['short_name'])

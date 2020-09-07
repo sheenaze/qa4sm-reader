@@ -41,7 +41,15 @@ class QA4SMAttributes(object):
             Global attributes of the QA4SM validation result
         """
         self.meta = global_attrs
+        self._get_offset()
         self.other_dcs, self.ref_dc = self._dcs()
+
+    def _get_offset(self):
+        self._offset_id_dc = 0
+        if 'val_ref' in self.meta.keys():
+            id = int(parse('val_dc_dataset{id}', self.meta['val_ref'])['id'])
+            if id != 0:
+                self._offset_id_dc = -1
 
     def _dcs(self):
         """ Go through the metadata and find the dataset short names """
@@ -102,11 +110,10 @@ class QA4SMAttributes(object):
         """ Get a dictionary with names of the non-reference values sets"""
         return self._dc_names(self._ref_dc())
 
-
 class QA4SMNamedAttributes(QA4SMAttributes):
     """ Attribute handler for named QA4SM datasets, based on global attributes."""
 
-    def __init__(self, id, short_name, global_attrs, offset_id_dc=0):
+    def __init__(self, id, short_name, global_attrs):
         """
         QA4SMNamedAttributes handler for metdata lookup
 
@@ -123,7 +130,6 @@ class QA4SMNamedAttributes(QA4SMAttributes):
 
         self.id = id
         self.__short_name = short_name
-        self.offset_id_dc = offset_id_dc
         self.__version = self._names_from_attrs('short_version')
 
         try:
@@ -148,7 +154,7 @@ class QA4SMNamedAttributes(QA4SMAttributes):
             return False
 
     def _id2dc(self) -> int:
-        return self.id + self.offset_id_dc
+        return self.id + self._offset_id_dc
 
     def _names_from_attrs(self, element='all'):
         """
@@ -226,18 +232,9 @@ class QA4SMMetricVariable(object):
 
         self.varname = varname
         self.attrs = global_attrs
-        self._get_offset()
         self.metric, self.g, parts = self._parse_varname()
         self.ref_ds, self.other_dss, self.metric_ds = self._named_attrs(parts)
         self.values = values
-
-    def _get_offset(self):
-        self._offset_id_dc = 0
-        if 'val_ref' in self.attrs.keys():
-            id = int(parse('val_dc_dataset{id}', self.attrs['val_ref'])['id'])
-            if id != 0:
-                self._offset_id_dc = -1
-
 
     def _named_attrs(self, parts:dict) -> \
             (QA4SMNamedAttributes, list, QA4SMNamedAttributes):
@@ -248,23 +245,18 @@ class QA4SMMetricVariable(object):
 
         if self.g == 0:
             a = QA4SMAttributes(self.attrs)
-            ref_ds = QA4SMNamedAttributes(a.ref_dc - self._offset_id_dc,
-                                          a.get_ref_names()['short_name'], self.attrs,
-                                          self._offset_id_dc)
+            ref_ds = QA4SMNamedAttributes(a.ref_dc - a._offset_id_dc,
+                                          a.get_ref_names()['short_name'], self.attrs)
             return ref_ds, None, None
         else:
             dss = []
-            ref_ds = QA4SMNamedAttributes(parts['ref_id'], parts['ref_ds'], self.attrs,
-                                          self._offset_id_dc)
-            ds = QA4SMNamedAttributes(parts['sat_id0'], parts['sat_ds0'], self.attrs,
-                                      self._offset_id_dc)
+            ref_ds = QA4SMNamedAttributes(parts['ref_id'], parts['ref_ds'], self.attrs)
+            ds = QA4SMNamedAttributes(parts['sat_id0'], parts['sat_ds0'], self.attrs)
             dss.append(ds)
             if self.g == 3:
-                ds = QA4SMNamedAttributes(parts['sat_id1'], parts['sat_ds1'], self.attrs,
-                                          self._offset_id_dc)
+                ds = QA4SMNamedAttributes(parts['sat_id1'], parts['sat_ds1'], self.attrs)
                 dss.append(ds)
-                mds = QA4SMNamedAttributes(parts['mds_id'], parts['mds'], self.attrs,
-                                           self._offset_id_dc)
+                mds = QA4SMNamedAttributes(parts['mds_id'], parts['mds'], self.attrs)
             else:
                 mds = None
             return ref_ds, dss, mds

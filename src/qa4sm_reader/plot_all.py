@@ -57,5 +57,5 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png',
     return fnames_boxes, fnames_maps
 
 if __name__ == '__main__':
-    thefile = r"U:\users_temp\delete\c3s_ismn.nc"
+    thefile = r"U:\users_temp\delete\2-ERA5_LAND.swvl1_with_1-ESA_CCI_SM_combined.sm.nc"
     plot_all(thefile, out_dir=r"U:\users_temp\delete\plots")
