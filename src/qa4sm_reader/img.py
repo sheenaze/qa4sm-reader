@@ -42,7 +42,7 @@ class QA4SMImg(object):
         self.index_names = index_names
 
         self.ignore_empty = ignore_empty
-        self.ds = xr.load_dataset(self.filepath)
+        self.ds = xr.open_dataset(self.filepath)
 
         self.common, self.double, self.triple = self._load_metrics_from_file(metrics)
 
@@ -95,10 +95,14 @@ class QA4SMImg(object):
         except IOError:
             return None
 
+
     def _ds2df(self, varnames:list=None) -> pd.DataFrame:
         """ Cut a variable to extent and return it as a values frame """
         try:
             if varnames is None:
+                if globals.time_name in list(self.ds.variables.keys()):
+                    if len(self.ds[globals.time_name]) == 0:
+                        self.ds = self.ds.drop('time')
                 df = self.ds.to_dataframe()
             else:
                 df = self.ds[self.index_names + varnames].to_dataframe()
@@ -107,12 +111,20 @@ class QA4SMImg(object):
             raise Exception(
                 'The given variable ' + ', '.join(varnames) +
                 ' do not match the names in the input values.' + str(e))
+
+        if isinstance(df.index, pd.MultiIndex):
+            lat, lon = globals.index_names
+            df[lat] = df.index.get_level_values(lat)
+            df[lon] = df.index.get_level_values(lon)
+
         if self.extent:  # === geographical subset ===
             lat, lon = globals.index_names
             df = df[(df[lon] >= self.extent[0]) & (df[lon] <= self.extent[1]) &
                     (df[lat] >= self.extent[2]) & (df[lat] <= self.extent[3])]
+
         df.reset_index(drop=True, inplace=True)
         df = df.set_index(self.index_names)
+
         return df
 
     def metric_df(self, metric):
@@ -147,7 +159,11 @@ class QA4SMImg(object):
                             mds_df[k].append(Var.values)
                     ret = []
                     for k, dflist in mds_df.items():
-                        ret.append(pd.concat(dflist, axis=1))
+                        try:
+                            r = pd.concat(dflist, sort=True, axis=1)
+                        except ValueError:
+                            r = pd.concat(dflist, sort=True, axis=0)
+                        ret.append(r)
                     return ret
 
     def find_group(self, src):
@@ -313,9 +329,3 @@ class QA4SMImg(object):
         else:
             return np.sort(np.array(common + double + triple))
 
-if __name__ == '__main__':
-    afile = r"H:\code\qa4sm-reader\tests\test_data\basic\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-SMOS.Soil_Moisture.nc"
-    path = r'H:\code\qa4sm-reader\tests\test_data\tc\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-ASCAT.sm.nc'
-    # 6-ISMN.soil moisture_with_1-C3S.sm_with_2-C3S.sm_with_3-SMOS.Soil_Moisture_with_4-SMAP.soil_moisture_with_5-ASCAT.sm.nc'
-    img = QA4SMImg(afile)
-    img.metric_df('snr')

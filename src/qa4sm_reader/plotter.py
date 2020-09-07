@@ -244,14 +244,21 @@ class QA4SMPlotter(object):
 
         return '\n'.join(met_str)
 
-    def _box_caption(self, dss_meta) -> str:
+    def _box_caption(self, dss_meta, ignore_ds_idx:list=None, caption_header=None) -> str:
         """ Create the dataset part of the box caption """
 
         ds_parts = []
         for i, ds_meta in dss_meta: # [(1, {meta})]
+            if (ignore_ds_idx is not None) and (i in ignore_ds_idx):
+                continue
             ds_parts.append('{0}\n({1})'.format(ds_meta['pretty_name'],
                                                 ds_meta['pretty_version']))
+
         ds_part = '\n and \n'.join(ds_parts)
+
+        if caption_header is not None:
+            ds_part = caption_header + '\n' + ds_part
+
         return ds_part
 
     def _comb_title_parts(self, title_parts, max_len) -> str:
@@ -347,7 +354,9 @@ class QA4SMPlotter(object):
                 assert mds_meta == MDS_META
                 assert ref_meta == REF_META
 
-                box_cap_ds = self._box_caption(dss_meta)
+                box_cap_ds = self._box_caption(
+                    dss_meta, ignore_ds_idx=[mds_meta[0], ref_meta[0]],
+                    caption_header='Other Data:')
 
                 if add_stats:
                     box_stats = self._box_stats(df[tcvar])
@@ -374,7 +383,7 @@ class QA4SMPlotter(object):
             fig, ax = boxplot(df=df, label=label, figsize=figsize, dpi=globals.dpi)
 
             # === set limits ===
-            ax.set_ylim(get_value_range(df, metric))
+            ##ax.set_ylim(get_value_range(df, metric))
 
             # === add title ===
             ax.set_title(title, pad=globals.title_pad)
@@ -467,7 +476,7 @@ class QA4SMPlotter(object):
         fig, ax = boxplot(df=df, label=label, figsize=figsize, dpi=globals.dpi)
 
         # === set limits ===
-        ax.set_ylim(get_value_range(df, metric))
+        #ax.set_ylim(get_value_range(df, metric))
 
         # === add title ===
         ax.set_title(title, pad=globals.title_pad)
@@ -618,19 +627,3 @@ class QA4SMPlotter(object):
             plt.close('all')
             for fn in fns: fnames.append(fn)
         return fnames
-
-
-
-if __name__ == '__main__':
-
-    path = r"H:\code\qa4sm-reader\tests\test_data\tc\5-ERA5.swvl1_with_1-C3S.sm_with_2-SMOS.Soil_Moisture_with_3-SMAP.soil_moisture_with_4-ASCAT.sm.nc"
-    out_dir = r'C:\Temp\qa4smreader_plots\new'
-    img = QA4SMImg(path)
-    harry = QA4SMPlotter(img, out_dir=out_dir)
-    harry.mapplot('snr')
-    harry.boxplot_tc('snr')
-
-    harry.mapplot('R')
-    harry.mapplot('RMSD')
-    harry.mapplot('rho')
-    harry.mapplot('BIAS')

@@ -41,7 +41,15 @@ class QA4SMAttributes(object):
             Global attributes of the QA4SM validation result
         """
         self.meta = global_attrs
+        self._get_offset()
         self.other_dcs, self.ref_dc = self._dcs()
+
+    def _get_offset(self):
+        self._offset_id_dc = 0
+        if 'val_ref' in self.meta.keys():
+            id = int(parse('val_dc_dataset{id}', self.meta['val_ref'])['id'])
+            if id != 0:
+                self._offset_id_dc = -1
 
     def _dcs(self):
         """ Go through the metadata and find the dataset short names """
@@ -102,7 +110,6 @@ class QA4SMAttributes(object):
         """ Get a dictionary with names of the non-reference values sets"""
         return self._dc_names(self._ref_dc())
 
-
 class QA4SMNamedAttributes(QA4SMAttributes):
     """ Attribute handler for named QA4SM datasets, based on global attributes."""
 
@@ -126,10 +133,18 @@ class QA4SMNamedAttributes(QA4SMAttributes):
         self.__version = self._names_from_attrs('short_version')
 
         try:
-            assert self.__short_name == self._names_from_attrs('short_name')
+            assert self.short_name == self._names_from_attrs('short_name')
         except AssertionError as e:
-            raise(e, 'Short name does not match to the name in attributes. Is'
-                     'the id correct (as in the variable name)?')
+            raise(e, f"Short name {self.short_name} does not match to the name in "
+                     f"attributes {self._names_from_attrs('short_name')}. "
+                     f"Is the id correct (as in the variable name)?")
+    @property
+    def short_name(self) -> str:
+        return self.__short_name
+
+    @property
+    def version(self) -> str:
+        return self.__version
 
     def __eq__(self, other):
         if (self.version == other.version) and \
@@ -139,7 +154,7 @@ class QA4SMNamedAttributes(QA4SMAttributes):
             return False
 
     def _id2dc(self) -> int:
-        return self.id + globals._offset_id_dc
+        return self.id + self._offset_id_dc
 
     def _names_from_attrs(self, element='all'):
         """
@@ -173,14 +188,6 @@ class QA4SMNamedAttributes(QA4SMAttributes):
             return names[element[0]]
         else:
             return {e: names[e] for e in element}
-
-    @property
-    def short_name(self) -> str:
-        return self.__short_name
-
-    @property
-    def version(self) -> str:
-        return self.__version
 
     def pretty_name(self) -> str:
         """ get the pretty name, from meta or from globals.py """
@@ -238,7 +245,7 @@ class QA4SMMetricVariable(object):
 
         if self.g == 0:
             a = QA4SMAttributes(self.attrs)
-            ref_ds = QA4SMNamedAttributes(a.ref_dc - globals._offset_id_dc,
+            ref_ds = QA4SMNamedAttributes(a.ref_dc - a._offset_id_dc,
                                           a.get_ref_names()['short_name'], self.attrs)
             return ref_ds, None, None
         else:
@@ -308,24 +315,3 @@ class QA4SMMetricVariable(object):
             mds_meta = None
 
         return ref_meta, dss_meta, mds_meta
-
-
-
-
-if __name__ == '__main__':
-
-    import xarray as xr
-    ds = xr.load_dataset(r"H:\code\qa4sm-reader\tests\test_data\basic\4-ERA5.swvl1_with_1-C3S.sm_with_2-ASCAT.sm_with_3-SMOS.Soil_Moisture.nc")
-    print('setup')
-    var1 = QA4SMMetricVariable('n_obs', ds.attrs)
-    var2 = QA4SMMetricVariable('RMSD_between_4-ERA5_and_1-C3S', ds.attrs)
-    print('varmeta')
-    var1.get_varmeta()
-    var2.get_varmeta()
-
-    ds = xr.load_dataset(r"H:\code\qa4sm-reader\tests\test_data\tc\3-ERA5_LAND.swvl1_with_1-C3S.sm_with_2-ASCAT.sm.nc")
-    var1 = QA4SMMetricVariable('n_obs', ds.attrs)
-    var2 = QA4SMMetricVariable('snr_1-C3S_between_3-ERA5_LAND_and_1-C3S_and_2-ASCAT', ds.attrs)
-    a1,b1,c1 =var1.get_varmeta()
-    a2,b2,c2 =var2.get_varmeta()
-

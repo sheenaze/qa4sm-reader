@@ -9,6 +9,7 @@ import cartopy.crs as ccrs
 # === plot defaults ===
 matplotlib_ppi = 72  # Don't change this, it's a matplotlib convention.
 index_names = ['lat', 'lon']  # Names used for 'lattitude' and 'longitude' coordinate.
+time_name = 'time' # not used at the moment, dropped on load
 dpi = 100  # Resolution in which plots are going to be rendered.
 title_pad = 12.0  # Padding below the title in points. default padding is matplotlib.rcParams['axes.titlepad'] = 6.0
 data_crs = ccrs.PlateCarree()  # Default map projection. use one of
@@ -55,22 +56,21 @@ _cclasses = {
     'seq_better': colorcet.cm['CET_L4'], #'cet_CET_L4'  # sequential: increasing value good (n_obs)
 }
 
-# 0=common metrics, 2=paired metrics (2 datasets), 3=triple metrics (TC)
-metric_groups = {0 : ['n_obs'],
-                 2 : ['R', 'p_R', 'rho','p_rho', 'RMSD', 'BIAS',
-                      'urmsd', 'mse', 'mse_corr', 'mse_bias', 'mse_var',
-                      'RSS', 'tau', 'p_tau'],
-                 3 : ['snr', 'err_std', 'beta']}
+# 0=common metrics, 2=paired metrics (2 datasets), 3=triple metrics (TC, 3 datasets)
+metric_groups = {0: ['n_obs'],
+                 2: ['R', 'p_R', 'rho','p_rho', 'RMSD', 'BIAS',
+                     'urmsd', 'mse', 'mse_corr', 'mse_bias', 'mse_var',
+                     'RSS', 'tau', 'p_tau'],
+                 3: ['snr', 'err_std', 'beta']}
 
 # === variable template ===
 # how the metric is separated from the rest
-var_name_metric_sep = {0 : "{metric}", 2 : "{metric}_between_",
-                       3 : "{metric}_{mds_id:d}-{mds}_between_"}
+var_name_metric_sep = {0: "{metric}", 2: "{metric}_between_",
+                       3: "{metric}_{mds_id:d}-{mds}_between_"}
 # how two datasets are separated, ids must be marked as numbers with :d!
 var_name_ds_sep = {0: None, 2: "{ref_id:d}-{ref_ds}_and_{sat_id0:d}-{sat_ds0}",
                    3: "{ref_id:d}-{ref_ds}_and_{sat_id0:d}-{sat_ds0}_and_{sat_id1:d}-{sat_ds1}"}
 
-_offset_id_dc = -1
 # === metadata tempplates ===
 _ref_ds_attr = 'val_ref' # global meta values variable that links to the reference dc
 _ds_short_name_attr = 'val_dc_dataset{:d}' # attribute convention for other datasets
@@ -92,9 +92,9 @@ _colormaps = {  # from /qa4sm/validator/validation/graphics.py
     'mse_corr': _cclasses['seq_worse'],
     'mse_bias': _cclasses['seq_worse'],
     'mse_var': _cclasses['seq_worse'],
-    'RSS' : _cclasses['seq_worse'],
-    'tau' :_cclasses['div_better'],
-    'p_tau' : _cclasses['seq_worse'],
+    'RSS': _cclasses['seq_worse'],
+    'tau':_cclasses['div_better'],
+    'p_tau': _cclasses['seq_worse'],
     'snr': _cclasses['div_better'],
     'err_std': _cclasses['div_neutr'],
     'beta': _cclasses['div_neutr'],
@@ -109,6 +109,8 @@ _metric_value_ranges = {  # from /qa4sm/validator/validation/graphics.py
     'p_R': [0, 1],  # probability that observed corellation is statistical fluctuation
     'rho': [-1, 1],
     'p_rho': [0, 1],
+    'tau': [-1, 1],
+    'p_tau': [0, 1],
     'RMSD': [0, None],
     'BIAS': [None, None],
     'n_obs': [0, None],

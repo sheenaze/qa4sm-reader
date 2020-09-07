@@ -309,6 +309,7 @@ def style_map(ax, plot_extent, add_grid=True, map_resolution=globals.naturaleart
         ax.add_feature(cfeature.STATES, linewidth=0.1, zorder=3)
 
     return ax
+
 def make_watermark(fig, placement=globals.watermark_pos, for_map=False, offset=0.02):
     """
     Adds a watermark to fig and adjusts the current axis to make sure there
@@ -332,14 +333,14 @@ def make_watermark(fig, placement=globals.watermark_pos, for_map=False, offset=0
     height = fig.get_size_inches()[1]
     offset = offset + (((fontsize + pad) / globals.matplotlib_ppi) / height) * 2.2
     if placement == 'top':
-        plt.annotate(s=globals.watermark, xy=[0.5, 1], xytext=[-pad, -pad],
+        plt.annotate(globals.watermark, xy=[0.5, 1], xytext=[-pad, -pad],
                      fontsize=fontsize, color='grey',
                      horizontalalignment='center', verticalalignment='top',
                      xycoords='figure fraction', textcoords='offset points')
         top = fig.subplotpars.top
         fig.subplots_adjust(top=top - offset)
     elif placement == 'bottom':
-        plt.annotate(s=globals.watermark, xy=[0.5, 0], xytext=[pad, pad],
+        plt.annotate(globals.watermark, xy=[0.5, 0], xytext=[pad, pad],
                      fontsize=fontsize, color='grey',
                      horizontalalignment='center', verticalalignment='bottom',
                      xycoords='figure fraction', textcoords='offset points')
@@ -348,5 +349,3 @@ def make_watermark(fig, placement=globals.watermark_pos, for_map=False, offset=0
             fig.subplots_adjust(bottom=bottom + offset)  # defaults to rc when none!
     else:
         raise NotImplementedError
-
-
