@@ -27,7 +27,6 @@ install:
   - conda env update -f environment.yml -n qa4smreader
 
   - source activate qa4smreader
-  - python setup.py develop
 
   - conda list
   - pip list
