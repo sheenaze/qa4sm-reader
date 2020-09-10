@@ -393,7 +393,7 @@ class QA4SMPlotter(object):
                 make_watermark(fig, globals.watermark_pos, offset=0.1)
 
             # === save ===
-            out_name = 'boxplot_{}_{}-{}'.format(metric, MDS_META[0], MDS_META[1]['short_name'])
+            out_name = 'boxplot_{}_for_{}-{}'.format(metric, MDS_META[0], MDS_META[1]['short_name'])
 
             out_dir, out_name, out_type = get_dir_name_type(out_name, out_type, self.out_dir)
             if not os.path.exists(out_dir):
