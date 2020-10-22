@@ -251,7 +251,7 @@ def get_extend_cbar(metric):
 def style_map(ax, plot_extent, add_grid=True, map_resolution=globals.naturalearth_resolution,
               add_topo=False, add_coastline=True,
               add_land=True, add_borders=True, add_us_states=False):
-    ax.set_extent(plot_extent)
+    ax.set_extent(plot_extent, crs=globals.data_crs)
     ax.outline_patch.set_linewidth(0.4)
     if add_grid:
         # add gridlines. Bcs a bug in cartopy, draw girdlines first and then grid labels.
@@ -282,8 +282,8 @@ def style_map(ax, plot_extent, add_grid=True, map_resolution=globals.naturaleart
                 yticks = yticks[(yticks >= plot_extent[2]) & (yticks <= plot_extent[3])]
                 gltext.xformatter = LONGITUDE_FORMATTER
                 gltext.yformatter = LATITUDE_FORMATTER
-                gltext.xlabels_top = False
-                gltext.ylabels_left = False
+                gltext.top_labels = False
+                gltext.left_labels = False
                 gltext.xlocator = mticker.FixedLocator(xticks)
                 gltext.ylocator = mticker.FixedLocator(yticks)
             except RuntimeError as e:
