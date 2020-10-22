@@ -55,7 +55,3 @@ def plot_all(filepath, metrics=None, extent=None, out_dir=None, out_type='png',
         for fn in fns_maps: fnames_maps.append(fn)
 
     return fnames_boxes, fnames_maps
-
-if __name__ == '__main__':
-    plot_all(r"C:\Temp\era5\0-ERA5.swvl1_with_1-ESA_CCI_SM_combined.sm_with_2-ESA_CCI_SM_combined.sm.nc",
-             out_dir = r"C:\Temp\era5")
