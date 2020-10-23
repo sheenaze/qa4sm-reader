@@ -11,7 +11,7 @@ Version 0.3.2
 Version 0.3.1
 =============
 
- - Change how plots are named
+- Change how plots are named
  
 Version 0.3
 ===========
