@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 0.3.1
+=============
+
+- Fix bug that could break global overview maps
+- Resolve deprecation warnings caused by cartopy
+
 Version 0.3
 ===========
 
