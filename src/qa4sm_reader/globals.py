@@ -161,7 +161,7 @@ _metric_units = {  # from /qa4sm/validator/validation/graphics.py
     'ERA5': r'm^3 m^{-3}',
     'ERA5_LAND': r'm^3 m^{-3}',
     'ESA_CCI_SM_active': r'percentage of saturation',
-    'ESA_CCI_SM_combinded': r'm^3 m^{-3}',
+    'ESA_CCI_SM_combined': r'm^3 m^{-3}',
     'ESA_CCI_SM_passive': r'm^3 m^{-3}',
     'SMOS': r'm^3 m^{-3}',
 }
