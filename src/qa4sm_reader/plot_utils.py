@@ -37,13 +37,30 @@ def _value2index(a, a_min, da):
     "Return the indexes corresponding to a. a and the returned index is a numpy array."
     return ((a - a_min) / da).astype('int')
 
-def geotraj_to_geo2d(df, var, index=globals.index_names):
+def _get_closest(x, xs_new):
+    # compute differences between given coordinate and the target grid,
+    # find the smallest one and return the new coordinate
+    diffs = [abs(x_new - x) for x_new in xs_new]
+    min_dif = np.min(diffs)
+    ind = diffs.index(min_dif)
+    return xs_new[ind]
+
+def _resample(x_old, grid_stepsize):
+    # taking the min and the max values
+    x_min = np.min(x_old)
+    x_max = np.max(x_old)
+    # creating target range,  add gridstepsize to the max because it is not included in the range
+    x_target = np.arange(x_min, x_max+ grid_stepsize, grid_stepsize)
+    x_new = [_get_closest(x, x_target) for x in x_old]  # resample
+    return np.array(x_new)
+
+def geotraj_to_geo2d(df, var, index=globals.index_names, grid_stepsize=None):
     """
     Converts geotraj (list of lat, lon, value) to a regular grid over lon, lat.
     The values in df needs to be sampled from a regular grid, the order does not matter.
-    When used with plt.imshow(), specify data_extent to make sure, 
+    When used with plt.imshow(), specify data_extent to make sure,
     the pixels are exactly where they are expected.
-    
+
     Parameters
     ----------
     df : pandas.DataFrame
@@ -53,6 +70,8 @@ def geotraj_to_geo2d(df, var, index=globals.index_names):
     index : tuple, optional
         Tuple containing the names of lattitude and longitude index. Usually ('lat','lon')
         The default is globals.index_names
+    grid_stepsize : None or float, optional
+        angular grid stepsize to prepare a regular grid for plotting
 
     Returns
     -------
@@ -66,6 +85,10 @@ def geotraj_to_geo2d(df, var, index=globals.index_names):
     xx = df.index.get_level_values(index[1])  # lon
     yy = df.index.get_level_values(index[0])   # lat
     data = df[var]
+    
+    if grid_stepsize is not None:
+        xx = _resample(xx, grid_stepsize)
+        yy = _resample(yy, grid_stepsize)
 
     x_min, x_max, dx, len_x = _get_grid(xx)
     y_min, y_max, dy, len_y = _get_grid(yy)
@@ -175,12 +198,12 @@ def get_plot_extent(df, grid=False):
         whether the values in df is on a equally spaced grid (for use in mapplot)
     df : pandas.DataFrame
         Plot values.
-    
+
     Returns
     -------
     extent : tuple | list
         (x_min, x_max, y_min, y_max) in Data coordinates.
-    
+
     """
     lat, lon = globals.index_names
     if grid:
