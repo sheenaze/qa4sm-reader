@@ -47,8 +47,7 @@ class QA4SMImg(object):
         self.common, self.double, self.triple = self._load_metrics_from_file(metrics)
         
         self.ref_dataset = self.ds.val_dc_dataset0
-        self.ref_dataset_grid_stepsize = self.ds.val_dc_dataset0_grid # this is sth I'm going to add in the future
-        self.ref_dataset_is_regular = self.ds.val_dc_dataset0_regular # this is sth I'm going to add in the future
+        self.ref_dataset_grid_stepsize = self.ds.val_dc_dataset0_grid_stepsize
 
     def _load_metrics_from_file(self, metrics:list=None) -> (dict, dict, dict):
         """ Load and group all metrics from file """

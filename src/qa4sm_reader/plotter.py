@@ -67,7 +67,7 @@ def boxplot(df, label=None, figsize=None, dpi=100):
 
 
 
-def mapplot(df, var, metric, ref_short, ref_is_regular=True, ref_grid_stepsize=None, plot_extent=None, colormap=None,
+def mapplot(df, var, metric, ref_short, ref_grid_stepsize=None, plot_extent=None, colormap=None,
             projection=None, add_cbar=True, figsize=globals.map_figsize, dpi=globals.dpi, **style_kwargs):
 
         """
@@ -545,16 +545,11 @@ class QA4SMPlotter(object):
         metric = list(var_meta.keys())[0]
 
         ref_short = self.img.ref_dataset
-        ref_is_regular = self.img.ref_dataset_is_regular
+        ref_grid_stepsize = self.img.ref_dataset_grid_stepsize
 
         # === plot values ===
-        if ref_is_regular:
-            fig, ax = mapplot(df=df, var=varname, metric=metric, ref_short=ref_short,
-                              plot_extent=self.img.extent, **plot_kwargs)
-        else:
-            ref_grid_stepsize = self.img.ref_dataset_grid_stepsize
-            fig, ax = mapplot(df=df, var=varname, metric=metric, ref_short=ref_short, ref_is_regular = ref_is_regular,
-                          ref_grid_stepsize = ref_grid_stepsize, plot_extent=self.img.extent, **plot_kwargs)
+        fig, ax = mapplot(df=df, var=varname, metric=metric, ref_short=ref_short, ref_grid_stepsize = ref_grid_stepsize,
+                          plot_extent=self.img.extent, **plot_kwargs)
 
         # === add title ===
         if var_meta[metric][1] is None:
