@@ -28,8 +28,17 @@ def _get_grid(a):
     da = das[0]  # get smallest stepsize
     for d in das[1:]:  # make sure, all stepsizes are multiple of da
         da = _float_gcd(d, da)
+    da = das[-1]
     a_min = a[0]
     a_max = a[-1]
+    len_a = int((a_max - a_min) / da + 1)
+    return a_min, a_max, da, len_a
+
+def _get_grid_for_irregulars(a, grid_stepsize):
+    a = np.unique(a)
+    a_min = a[0]
+    a_max = a[-1]
+    da = grid_stepsize
     len_a = int((a_max - a_min) / da + 1)
     return a_min, a_max, da, len_a
 
@@ -44,15 +53,6 @@ def _get_closest(x, xs_new):
     min_dif = np.min(diffs)
     ind = diffs.index(min_dif)
     return xs_new[ind]
-
-def _resample(x_old, grid_stepsize):
-    # taking the min and the max values
-    x_min = np.min(x_old)
-    x_max = np.max(x_old)
-    # creating target range,  add gridstepsize to the max because it is not included in the range
-    x_target = np.arange(x_min, x_max+ grid_stepsize, grid_stepsize)
-    x_new = [_get_closest(x, x_target) for x in x_old]  # resample
-    return np.array(x_new)
 
 def geotraj_to_geo2d(df, var, index=globals.index_names, grid_stepsize=None):
     """
@@ -85,23 +85,28 @@ def geotraj_to_geo2d(df, var, index=globals.index_names, grid_stepsize=None):
     xx = df.index.get_level_values(index[1])  # lon
     yy = df.index.get_level_values(index[0])   # lat
     data = df[var]
-    
-    if grid_stepsize is not None:
-        xx = _resample(xx, grid_stepsize)
-        yy = _resample(yy, grid_stepsize)
 
-    x_min, x_max, dx, len_x = _get_grid(xx)
-    y_min, y_max, dy, len_y = _get_grid(yy)
+    if grid_stepsize is not 'nan':
+        x_min, x_max, dx, len_x = _get_grid_for_irregulars(xx, grid_stepsize)
+        y_min, y_max, dy, len_y = _get_grid_for_irregulars(yy, grid_stepsize)
 
-    ii = _value2index(yy, y_min, dy)
-    jj = _value2index(xx, x_min, dx)
+        data_extent = (x_min - dx, x_max + dx, y_min - dy, y_max + dy)
+        zz, grid = oversample(xx, yy, data.values, data_extent, dx, dy)
+        origin='upper'
 
-    zz = np.full((len_y, len_x), np.nan, dtype=np.float64)
-    zz[ii, jj] = data
+    else:
+        x_min, x_max, dx, len_x = _get_grid(xx)
+        y_min, y_max, dy, len_y = _get_grid(yy)
 
-    data_extent = (x_min - dx / 2, x_max + dx / 2, y_min - dy / 2, y_max + dy / 2)
+        ii = _value2index(yy, y_min, dy)
+        jj = _value2index(xx, x_min, dx)
 
-    return zz, data_extent
+        zz = np.full((len_y, len_x), np.nan, dtype=np.float64)
+        zz[ii, jj] = data
+        data_extent = (x_min - dx / 2, x_max + dx / 2, y_min - dy / 2, y_max + dy / 2)
+        origin = 'lower'
+
+    return zz, data_extent, origin
 
 def get_value_range(ds, metric=None, force_quantile=False, quantiles=[0.025, 0.975]):
     """
