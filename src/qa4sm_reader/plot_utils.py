@@ -86,7 +86,7 @@ def geotraj_to_geo2d(df, var, index=globals.index_names, grid_stepsize=None):
     yy = df.index.get_level_values(index[0])   # lat
     data = df[var]
 
-    if grid_stepsize is not 'nan':
+    if grid_stepsize not in ['nan', None]:
         x_min, x_max, dx, len_x = _get_grid_for_irregulars(xx, grid_stepsize)
         y_min, y_max, dy, len_y = _get_grid_for_irregulars(yy, grid_stepsize)
 
