@@ -147,11 +147,11 @@ def mapplot(df, var, metric, ref_short, ref_grid_stepsize=None, plot_extent=None
             if ref_is_regular:
                 zz, zz_extent = geotraj_to_geo2d(df, var)
             else:
-                zz, zz_extent = geotraj_to_geo2d(df, var, grid_stepsize=ref_grid_stepsize)
+                zz, zz_extent, origin = geotraj_to_geo2d(df, var, grid_stepsize=ref_grid_stepsize)
 
             # === plot ===
             im = ax.imshow(zz, cmap=cmap, vmin=v_min, vmax=v_max,
-                           interpolation='nearest', origin='lower',
+                           interpolation='nearest', origin=origin,
                            extent=zz_extent,
                            transform=globals.data_crs, zorder=2)
 
