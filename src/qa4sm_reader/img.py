@@ -102,7 +102,7 @@ class QA4SMImg(object):
             if varnames is None:
                 if globals.time_name in list(self.ds.variables.keys()):
                     if len(self.ds[globals.time_name]) == 0:
-                        self.ds = self.ds.drop('time')
+                        self.ds = self.ds.drop_vars('time')
                 df = self.ds.to_dataframe()
             else:
                 df = self.ds[self.index_names + varnames].to_dataframe()

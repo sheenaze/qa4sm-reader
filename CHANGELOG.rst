@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Unreleased
+==========
+
+- Switch from Travis CI to GitHub Actions
+
 Version 0.3.2
 =============
 
