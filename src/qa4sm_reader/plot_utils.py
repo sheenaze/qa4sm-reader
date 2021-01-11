@@ -13,6 +13,7 @@ from cartopy import config as cconfig
 import cartopy.feature as cfeature
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import warnings
+from pygeogrids.grids import BasicGrid, genreg_grid
 cconfig['data_dir'] = os.path.join(os.path.dirname(__file__), 'cartopy')
 
 def _float_gcd(a, b, atol=1e-08):
@@ -46,13 +47,17 @@ def _value2index(a, a_min, da):
     "Return the indexes corresponding to a. a and the returned index is a numpy array."
     return ((a - a_min) / da).astype('int')
 
-def _get_closest(x, xs_new):
-    # compute differences between given coordinate and the target grid,
-    # find the smallest one and return the new coordinate
-    diffs = [abs(x_new - x) for x_new in xs_new]
-    min_dif = np.min(diffs)
-    ind = diffs.index(min_dif)
-    return xs_new[ind]
+def oversample(lon, lat, data, extent, dx, dy):
+
+    other = BasicGrid(lon, lat)
+    reg_grid = genreg_grid(dx, dy, minlat=extent[2], maxlat=extent[3],
+                           minlon=extent[0], maxlon=extent[1])
+
+    lut = reg_grid.calc_lut(other, max_dist=25000)
+    img = np.ma.masked_where(lut == -1, data[lut])
+    img[np.isnan(img)] = np.ma.masked
+
+    return img.reshape(-1, reg_grid.shape[1]), reg_grid
 
 def geotraj_to_geo2d(df, var, index=globals.index_names, grid_stepsize=None):
     """
@@ -89,9 +94,9 @@ def geotraj_to_geo2d(df, var, index=globals.index_names, grid_stepsize=None):
     if grid_stepsize not in ['nan', None]:
         x_min, x_max, dx, len_x = _get_grid_for_irregulars(xx, grid_stepsize)
         y_min, y_max, dy, len_y = _get_grid_for_irregulars(yy, grid_stepsize)
-
-        data_extent = (x_min - dx, x_max + dx, y_min - dy, y_max + dy)
+        data_extent = (x_min - dx/2, x_max + dx/2, y_min - dy/2, y_max + dy/2)
         zz, grid = oversample(xx, yy, data.values, data_extent, dx, dy)
+        print(zz)
         origin='upper'
 
     else:
