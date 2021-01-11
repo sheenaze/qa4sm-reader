@@ -59,7 +59,7 @@ def oversample(lon, lat, data, extent, dx, dy):
 
     return img.reshape(-1, reg_grid.shape[1]), reg_grid
 
-def geotraj_to_geo2d(df, var, index=globals.index_names):
+def geotraj_to_geo2d(df, var, index=globals.index_names, grid_stepsize=None):
     """
     Converts geotraj (list of lat, lon, value) to a regular grid over lon, lat.
     The values in df needs to be sampled from a regular grid, the order does not matter.
