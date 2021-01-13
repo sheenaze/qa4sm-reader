@@ -70,7 +70,7 @@ class TestQA4SMAttributes(unittest.TestCase):
 
     def test_grid_stepsize(self):
         attrs = test_grid_stepsize()
-        assert attrs['val_dc_dataset0_grid_stepsize'] == 0.25
+        assert attrs['val_dc_dataset0_grid_stepsize'] == 0.35
 
 
 if __name__ == '__main__':
