@@ -52,8 +52,8 @@ def oversample(lon, lat, data, extent, dx, dy):
     other = BasicGrid(lon, lat)
     reg_grid = genreg_grid(dx, dy, minlat=extent[2], maxlat=extent[3],
                            minlon=extent[0], maxlon=extent[1])
-
-    lut = reg_grid.calc_lut(other, max_dist=25000)
+    max_dist = dx * 111 * 1000 # a mean distance for one degree it's around 111 km
+    lut = reg_grid.calc_lut(other, max_dist=max_dist)
     img = np.ma.masked_where(lut == -1, data[lut])
     img[np.isnan(img)] = np.ma.masked
 

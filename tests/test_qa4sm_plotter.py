@@ -155,6 +155,7 @@ class TestQA4SMMetaImgIrregularGridPlotter(unittest.TestCase):
         self.plotdir = tempfile.mkdtemp()
         self.img = QA4SMImg(self.testfile_path)
         self.plotter = QA4SMPlotter(self.img, self.plotdir)
+        self.ref_dataset_grid_stepsize = self.img.ref_dataset_grid_stepsize
 
     # def test_netCDF_file:
     #     opened_file =
@@ -189,6 +190,15 @@ class TestQA4SMMetaImgIrregularGridPlotter(unittest.TestCase):
 
         shutil.rmtree(self.plotdir)
 
+    def test_grid_creation(self):
+        metric = 'n_obs'
+        varnames = list(self.img.metric_meta(metric).keys())
+        for varname in varnames:
+            df = self.img._ds2df([varname])
+            zz, grid, origin = geotraj_to_geo2d(df, varname, grid_stepsize=self.ref_dataset_grid_stepsize)
+            print('varname: ', varname, 'zz: ', zz, 'grid: ', grid)
+            assert zz.count() != 0
+            assert origin == 'upper'
 
 if __name__ == '__main__':
     pass
