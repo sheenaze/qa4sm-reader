@@ -214,7 +214,7 @@ def get_plot_extent(df, grid_stepsize=None, grid=False):
     
     """
     lat, lon = globals.index_names
-    if grid:
+    if grid and not grid_stepsize:
         x_min, x_max, dx, len_x = _get_grid(df.index.get_level_values(lon))
         y_min, y_max, dy, len_y = _get_grid(df.index.get_level_values(lat))
         extent = [x_min-dx/2., x_max+dx/2., y_min-dx/2., y_max+dx/2.]
