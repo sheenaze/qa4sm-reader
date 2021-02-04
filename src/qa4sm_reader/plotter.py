@@ -540,7 +540,7 @@ class QA4SMPlotter(object):
         assert len(list(var_meta.keys())) == 1
         metric = list(var_meta.keys())[0]
 
-        ref_short = self.img.ref_dataset
+        ref_short = var_meta[metric][0][1]['short_name']
         ref_grid_stepsize = self.img.ref_dataset_grid_stepsize
 
         # === plot values ===
